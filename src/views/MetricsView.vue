@@ -6,38 +6,30 @@
 
         <!-- Top row with 4 columns -->
         <div class="top-row">
-          <!-- Uptime rectangle with dynamic uptime info -->
-          <div class="top-item uptime" :class="uptimeInfo.isDown ? 'down' : 'up'">
-            <template v-if="uptimeInfo.isDown">
-              Last Activity: {{ uptimeInfo.displayText }}
-            </template>
-            <template v-else>
-              Uptime: {{ uptimeInfo.displayText }}
-            </template>
-          </div>
+          <!-- Uptime Component -->
+          <UptimeInfo :host="host" />
 
           <!-- Gauge for CPU Usage -->
           <div class="top-item gauge">
-            <a-progress :percent="cpuGauge" type="dashboard" :stroke-color="getGaugeColor(cpuGauge)"/>
+            <a-progress :percent="cpuGauge" type="dashboard" :stroke-color="getGaugeColor(cpuGauge)" />
             <div class="gauge-label">CPU</div>
           </div>
 
           <!-- Gauge for Memory Usage -->
           <div class="top-item gauge">
-            <a-progress :percent="memoryGauge" type="dashboard" :stroke-color="getGaugeColor(memoryGauge)"/>
+            <a-progress :percent="memoryGauge" type="dashboard" :stroke-color="getGaugeColor(memoryGauge)" />
             <div class="gauge-label">Memory</div>
           </div>
 
           <!-- Gauge for Disk Usage -->
           <div class="top-item gauge">
-            <a-progress :percent="diskGauge" type="dashboard" :stroke-color="getGaugeColor(diskGauge)"/>
+            <a-progress :percent="diskGauge" type="dashboard" :stroke-color="getGaugeColor(diskGauge)" />
             <div class="gauge-label">Disk</div>
           </div>
         </div>
 
         <!-- Chart grid: 3 columns; two rows with charts in first two columns, third column empty for future table -->
         <div class="chart-grid">
-          <!-- Row 1: CPU and Memory charts, empty third column -->
           <div class="chart-item">
             <CpuPerChart :host="host" />
           </div>
@@ -46,7 +38,6 @@
           </div>
           <div class="chart-item empty"></div>
 
-          <!-- Row 2: Network IO and Disk IO charts, empty third column -->
           <div class="chart-item">
             <NetworkioChart :host="host" />
           </div>
@@ -64,175 +55,73 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import axios from "axios";
+import { io } from "socket.io-client";
+
 import HiHello from "@/components/HiHello.vue";
 import CpuPerChart from "@/components/CpuPerChart.vue";
 import MemPerChart from "@/components/MemPerChart.vue";
 import NetworkioChart from "@/components/NetworkioChart.vue";
 import DiskioChart from "@/components/DiskioChart.vue";
-import { io } from "socket.io-client";
+import UptimeInfo from "@/components/UptimeInfo.vue";
 
 const route = useRoute();
 const host = ref(route.params.host);
 
-// Uptime reactive object
-const uptimeInfo = ref({
-  isDown: true,
-  displayText: "Loading...",
-  lastUptimeTimestamp: null,
-});
-
-// Gauge reactive variables
 const cpuGauge = ref(0);
 const memoryGauge = ref(0);
 const diskGauge = ref(0);
 
-// Format uptime in dd:hh:mm:ss
-const formatUptime = (seconds) => {
-  seconds = Math.floor(seconds);
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return `${days}d:${hours}h:${minutes}m:${secs}s`;
-};
-
 // Function to determine gauge color based on percentage value
 const getGaugeColor = (value) => {
-  if (value < 50) return "#52c41a";     // Green
-  if (value < 75) return "#faad14";       // Orange
-  return "#ff4d4f";                      // Red
+  if (value < 50) return "#52c41a";
+  if (value < 75) return "#faad14";
+  return "#ff4d4f";
 };
 
-// Fetch uptime and update uptimeInfo
-let uptimeInterval = null;
-const fetchUptime = async () => {
+// Fetch gauge values
+const fetchGauge = async (measurement, gaugeVar) => {
   try {
     const response = await axios.get("http://82.165.230.7:8086/query", {
       params: {
         db: "metrics",
-        q: `SELECT "uptime_seconds" FROM "uptime" WHERE "host" = '${host.value}' ORDER BY time DESC LIMIT 1`,
+        q: `SELECT "percent" FROM "${measurement}" WHERE "host" = '${host.value}' ORDER BY time DESC LIMIT 1`,
         u: "liberrex",
         p: "test",
       },
     });
     const values = response.data.results[0]?.series[0]?.values || [];
-    if (values.length > 0) {
-      const lastUptimeTimestampStr = values[0][0]; // Latest uptime record timestamp
-      const uptimeSeconds = values[0][1]; // Recorded uptime in seconds at that moment
-      const lastUptimeTimestamp = new Date(lastUptimeTimestampStr);
-      const currentTime = new Date();
-      const diffSeconds = (currentTime.getTime() - lastUptimeTimestamp.getTime()) / 1000;
-
-      if (diffSeconds > 60) {
-        // If more than 60 seconds have passed since the last uptime record, mark as down and show last activity timestamp
-        uptimeInfo.value = {
-          isDown: true,
-          displayText: lastUptimeTimestamp.toLocaleString("fr"),
-          lastUptimeTimestamp,
-        };
-      } else {
-        // Host is active; update uptime counter by adding elapsed time to stored uptime_seconds
-        const currentUptime = uptimeSeconds + diffSeconds;
-        uptimeInfo.value = {
-          isDown: false,
-          displayText: formatUptime(currentUptime),
-          lastUptimeTimestamp,
-        };
-      }
-    } else {
-      uptimeInfo.value = { isDown: true, displayText: "Unknown", lastUptimeTimestamp: null };
-    }
+    if (values.length > 0) gaugeVar.value = values[0][1];
   } catch (error) {
-    console.error("Error fetching uptime:", error);
-    uptimeInfo.value = { isDown: true, displayText: "Error", lastUptimeTimestamp: null };
-  }
-};
-
-// Fetch initial gauge values from DB
-const fetchCpuGauge = async () => {
-  try {
-    const response = await axios.get("http://82.165.230.7:8086/query", {
-      params: {
-        db: "metrics",
-        q: `SELECT "percent" FROM "cpu" WHERE "host" = '${host.value}' ORDER BY time DESC LIMIT 1`,
-        u: "liberrex",
-        p: "test",
-      },
-    });
-    const values = response.data.results[0]?.series[0]?.values || [];
-    if (values.length > 0) cpuGauge.value = values[0][1];
-  } catch (error) {
-    console.error("Error fetching CPU gauge:", error);
-  }
-};
-
-const fetchMemoryGauge = async () => {
-  try {
-    const response = await axios.get("http://82.165.230.7:8086/query", {
-      params: {
-        db: "metrics",
-        q: `SELECT "percent" FROM "memory" WHERE "host" = '${host.value}' ORDER BY time DESC LIMIT 1`,
-        u: "liberrex",
-        p: "test",
-      },
-    });
-    const values = response.data.results[0]?.series[0]?.values || [];
-    if (values.length > 0) memoryGauge.value = values[0][1];
-  } catch (error) {
-    console.error("Error fetching Memory gauge:", error);
-  }
-};
-
-const fetchDiskGauge = async () => {
-  try {
-    const response = await axios.get("http://82.165.230.7:8086/query", {
-      params: {
-        db: "metrics",
-        q: `SELECT "percent" FROM "disk" WHERE "host" = '${host.value}' ORDER BY time DESC LIMIT 1`,
-        u: "liberrex",
-        p: "test",
-      },
-    });
-    const values = response.data.results[0]?.series[0]?.values || [];
-    if (values.length > 0) diskGauge.value = values[0][1];
-  } catch (error) {
-    console.error("Error fetching Disk gauge:", error);
+    console.error(`Error fetching ${measurement} gauge:`, error);
   }
 };
 
 const fetchGauges = async () => {
-  await fetchCpuGauge();
-  await fetchMemoryGauge();
-  await fetchDiskGauge();
-};
-
-// WebSocket handling for gauge updates
-const handleGaugeNewData = (data) => {
-  if (data.host === host.value) {
-    if (data.measurement === "cpu") {
-      cpuGauge.value = data.fields.percent;
-    } else if (data.measurement === "memory") {
-      memoryGauge.value = data.fields.percent;
-    } else if (data.measurement === "disk") {
-      diskGauge.value = data.fields.percent;
-    }
-  }
+  await fetchGauge("cpu", cpuGauge);
+  await fetchGauge("memory", memoryGauge);
+  await fetchGauge("disk", diskGauge);
 };
 
 const socket = io("http://82.165.230.7:5000");
 
+const handleGaugeNewData = (data) => {
+  if (data.host === host.value) {
+    if (data.measurement === "cpu") cpuGauge.value = data.fields.percent;
+    if (data.measurement === "memory") memoryGauge.value = data.fields.percent;
+    if (data.measurement === "disk") diskGauge.value = data.fields.percent;
+  }
+};
+
 onMounted(() => {
-  fetchUptime();
-  uptimeInterval = setInterval(fetchUptime, 1000);
   fetchGauges();
   socket.on("new_data", handleGaugeNewData);
 });
 
 onUnmounted(() => {
-  if (uptimeInterval) clearInterval(uptimeInterval);
   socket.off("new_data", handleGaugeNewData);
 });
 </script>
+
 
 <style scoped>
 .containers {
