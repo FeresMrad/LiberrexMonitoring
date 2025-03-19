@@ -7,11 +7,13 @@ import Antd from 'ant-design-vue';
 import 'ant-design-vue/dist/reset.css';
 import DashboardView from "./views/DashboardView.vue";
 import EntitiesView from "./views/EntitiesView.vue";
+import TestView from "./views/TestView.vue";
 
 const routes = [
+  { path: "/test", component: TestView},
   { path: "/entities/:host", component: MetricsView },
-  { path: "/", component: DashboardView },
-  { path: "/entites", component: EntitiesView },
+  { path: "/dashboard", component: DashboardView },
+  { path: "/entities", component: EntitiesView },
 ];
 
 const router = createRouter({

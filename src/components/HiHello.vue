@@ -6,7 +6,7 @@
       <menu-outlined @click="toggleSidebar" class="header-icon left-icon" />
       
       <!-- Logo aligned to the left of the menu icon -->
-      <a href="/chart">
+      <a href="/dashboard">
         <img src="../assets/logoliberrex.png" alt="Logo" class="header-logo" />
       </a>
       
@@ -21,14 +21,14 @@
       <!-- SIDEBAR -->
       <a-layout-sider class="custom-sider" :collapsed="isCollapsed" collapsed-width="50">
         <a-menu v-model:selectedKeys="selectedKeys" mode="inline" class="custom-menu">
-          <router-link to="/">
+          <router-link to="/dashboard">
             <a-menu-item key="dashboard">
               <home-outlined />
               <span>Dashboard</span>
             </a-menu-item>
           </router-link>
-          <router-link to="/entites">
-            <a-menu-item key="entites">
+          <router-link to="/entities">
+            <a-menu-item key="entities">
               <desktop-outlined />
               <span>Entities</span>
             </a-menu-item>
@@ -64,11 +64,11 @@ const selectedKeys = ref([]); // Start with an empty array
 // Function to update selectedKeys based on route
 const updateSelectedKeys = () => {
   const pathMap = {
-    "/": ["dashboard"],
-    "/entites": ["entites"],
+    "/dashboard": ["dashboard"],
+    "/entities": ["entities"],
     "/alertes": ["alertes"],
   };
-  selectedKeys.value = pathMap[route.path] || ["dashboard"];
+  selectedKeys.value = pathMap[route.path] ;
 };
 
 // Watch for route changes and update menu selection

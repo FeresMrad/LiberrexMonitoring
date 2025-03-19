@@ -18,7 +18,7 @@
   plugins: {
     title: {
       display: true,
-      text: 'Network I/O (KB)',  // Title text
+      text: 'Network Traffic (KB)',  // Title text
       font: {
         size: 18,  // Font size of the title
         weight: 'bold'  // Font weight of the title
