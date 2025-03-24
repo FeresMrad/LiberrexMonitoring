@@ -56,11 +56,11 @@
   const hostsData = ref([]);
   
   const hostsColumns = ref([
-    { title: "Host Name", dataIndex: "name", key: "name" },
+    { title: "Hosts", dataIndex: "name", key: "name" },
     { title: "IP Address", dataIndex: "ip", key: "ip" },
-    { title: "CPU Usage", dataIndex: "cpuUsage", key: "cpuUsage" },
-    { title: "Memory Usage", dataIndex: "memoryUsage", key: "memoryUsage" },
-    { title: "Disk Usage", dataIndex: "diskUsage", key: "diskUsage" },
+    { title: "CPU", dataIndex: "cpuUsage", key: "cpuUsage" },
+    { title: "Memory", dataIndex: "memoryUsage", key: "memoryUsage" },
+    { title: "Disk", dataIndex: "diskUsage", key: "diskUsage" },
     { title: "System Boot", dataIndex: "systemBoot", key: "systemBoot" },
     { title: "Activity", dataIndex: "activity", key: "activity" }
   ]);

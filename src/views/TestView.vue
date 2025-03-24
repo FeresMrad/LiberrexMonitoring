@@ -1,14 +1,14 @@
 <template>
   <div id="app">
-    <HiHello />
+    <LogsTest />
   </div>
 </template>
 
 <script>
-import HiHello from '@/components/HiHello.vue';
+import LogsTest from '@/components/LogsTest.vue';
 export default {
   components: {
-    HiHello,
+    LogsTest,
   },
 };
 </script>
