@@ -33,6 +33,11 @@
           </div>
           <div class="chart-item empty"></div>
         </div>
+
+        <!-- Table Component: logstable -->
+        <div class="table-container">
+          <LogsTable :host="host" />
+        </div>
       </div>
     </HiHello>
   </a-layout>
@@ -48,6 +53,9 @@ import MemPerChart from "@/components/MemPerChart.vue"
 import NetworkioChart from "@/components/NetworkioChart.vue"
 import DiskioChart from "@/components/DiskioChart.vue"
 import GaugeChart from "@/components/GaugeChart.vue"
+import LogsTable from "@/components/LogsTable.vue"
+
+// Define the host for usage within the component
 const route = useRoute()
 const host = ref(route.params.host)
 </script>
@@ -81,6 +89,7 @@ const host = ref(route.params.host)
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   width: 100%;
+  margin-bottom: 20px;
 }
 
 /* Chart item styling */
@@ -97,5 +106,11 @@ const host = ref(route.params.host)
   background-color: transparent;
   border: none;
   box-shadow: none;
+}
+
+/* Table container styling */
+.table-container {
+  width: 100%;
+  margin-top: 20px;
 }
 </style>
