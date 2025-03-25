@@ -1,24 +1,18 @@
 <template>
     <div>
       <h2>Log Entries</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Timestamp</th>
-            <th>Severity</th>
-            <th>Service</th>
-            <th>Log Message</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="log in logs" :key="log._stream_id">
-            <td>{{ log._time }}</td>
-            <td>{{ getSeverityText(log.severity) }}</td>
-            <td>{{ log.app_name }}</td>
-            <td>{{ log._msg }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <a-table :columns="logColumns" :data-source="logs" :pagination="false">
+        <template v-slot:bodyCell="{ column, text }">
+          <template v-if="column.key === 'severity'">
+            <span :class="['severity', getSeverityClass(text)]">
+              {{ getSeverityText(text) }}
+            </span>
+          </template>
+          <template v-if="column.key === 'message'">
+            <span class="log-message">{{ text }}</span>
+          </template>
+        </template>
+      </a-table>
     </div>
   </template>
   
@@ -28,7 +22,13 @@
   export default {
     data() {
       return {
-        logs: []
+        logs: [],
+        logColumns: [
+          { title: "Timestamp", dataIndex: "_time", key: "timestamp" },
+          { title: "Severity", dataIndex: "severity", key: "severity" },
+          { title: "Service", dataIndex: "app_name", key: "service" },
+          { title: "Log Message", dataIndex: "_msg", key: "message" }
+        ]
       };
     },
     methods: {
@@ -50,13 +50,25 @@
   
           console.log("API Response:", response.data);
           this.logs = response.data;
-          console.log("logs array", this.logs);
         } catch (error) {
           console.error("Error fetching logs:", error);
         }
       },
       getSeverityText(severity) {
         const severityLevels = {
+          0: "Emergency",
+          1: "Alert",
+          2: "Critical",
+          3: "Error",
+          4: "Warning",
+          5: "Notification",
+          6: "Info",
+          7: "Debug"
+        };
+        return severityLevels[severity] || `Unknown (${severity})`;
+      },
+      getSeverityClass(severity) {
+        const classes = {
           0: "emergency",
           1: "alert",
           2: "critical",
@@ -66,7 +78,7 @@
           6: "info",
           7: "debug"
         };
-        return severityLevels[severity] || `Unknown (${severity})`;
+        return classes[severity] || "unknown";
       }
     },
     mounted() {
@@ -76,17 +88,24 @@
   </script>
   
   <style scoped>
-  table {
-    width: 100%;
-    border-collapse: collapse;
+  .severity {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    display: inline-block;
   }
-  th,
-  td {
-    border: 1px solid #ddd;
-    padding: 8px;
-  }
-  th {
-    background-color: #f2f2f2;
+  
+  .severity.emergency { background-color: #ff4d4f; color: white; }
+  .severity.alert { background-color: #ff7a45; color: white; }
+  .severity.critical { background-color: #ff9c6e; color: white; }
+  .severity.error { background-color: #ffa39e; color: white; }
+  .severity.warning { background-color: #faad14; color: black; }
+  .severity.notification { background-color: #bae637; color: black; }
+  .severity.info { background-color: #1890ff; color: white; }
+  .severity.debug { background-color: #d9d9d9; color: black; }
+  
+  .log-message {
+    word-wrap: break-word;
+    white-space: pre-wrap;
   }
   </style>
-  
