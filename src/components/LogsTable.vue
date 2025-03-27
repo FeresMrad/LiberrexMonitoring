@@ -82,6 +82,8 @@
         logs: [],
         logColumns: [
           { title: 'Timestamp', dataIndex: '_time', key: 'timestamp' },
+          { title: 'Service', dataIndex: 'app_name', key: 'app_name', customFilterDropdown: true },
+          { title: 'Log Message', dataIndex: '_msg', key: 'message' },
           { 
             title: 'Severity', 
             dataIndex: 'severity', 
@@ -98,8 +100,6 @@
             ],
             onFilter: (value, record) => record.severity.toString() === value.toString(),
           },
-          { title: 'Service', dataIndex: 'app_name', key: 'app_name', customFilterDropdown: true },
-          { title: 'Log Message', dataIndex: '_msg', key: 'message' },
         ],
       };
     },
@@ -113,20 +113,29 @@
     },
     computed: {
       filteredLogs() {
-        // Apply filtering for Service column search if active
-        if (!this.state.searchText || this.state.searchedColumn !== 'app_name') {
-          return this.logs;
-        }
-        return this.logs.filter(log =>
-          log.app_name.toLowerCase().includes(this.state.searchText.toLowerCase())
-        );
-      },
+    // Apply filtering for Service column search if active
+    let logsToDisplay = this.logs;
+    if (this.state.searchText && this.state.searchedColumn === 'app_name') {
+      logsToDisplay = this.logs.filter(log =>
+        log.app_name.toLowerCase().includes(this.state.searchText.toLowerCase())
+      );
+    }
+
+    // Sort by timestamp (_time)
+    logsToDisplay.sort((a, b) => {
+      const timeA = new Date(a._time).getTime(); // Ensure the timestamp is parsed as a Date object
+      const timeB = new Date(b._time).getTime(); // Ensure the timestamp is parsed as a Date object
+      return timeB - timeA; // Sort in descending order (latest first)
+    });
+
+    return logsToDisplay;
+  },
     },
     methods: {
       async fetchLogs() {
         try {
           const response = await axios.get(
-            "http://82.165.230.7:9428/select/logsql/query?query=*&start=1h",
+            "http://82.165.230.7:9428/select/logsql/query?query=*&start=5m",
             {
               transformResponse: [
                 (data) => {
