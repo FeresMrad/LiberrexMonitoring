@@ -97,18 +97,6 @@ const searchInput = ref(null);
 const logColumns = [
   { title: 'Timestamp', dataIndex: '_time', key: 'timestamp' },
   { 
-    title: 'Hostname', 
-    dataIndex: 'hostname', 
-    key: 'hostname' 
-  },
-  { 
-    title: 'Service', 
-    dataIndex: 'app_name', 
-    key: 'app_name', 
-    customFilterDropdown: true 
-  },
-  { title: 'Log Message', dataIndex: '_msg', key: 'message' },
-  { 
     title: 'Severity', 
     dataIndex: 'severity', 
     key: 'severity',
@@ -124,6 +112,13 @@ const logColumns = [
     ],
     onFilter: (value, record) => record.severity.toString() === value.toString(),
   },
+  { 
+    title: 'Service', 
+    dataIndex: 'app_name', 
+    key: 'app_name', 
+    customFilterDropdown: true 
+  },
+  { title: 'Log Message', dataIndex: '_msg', key: 'message' },
 ];
 
 // Computed property for filtered and sorted logs
