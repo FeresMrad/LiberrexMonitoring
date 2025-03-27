@@ -75,9 +75,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, defineProps } from 'vue';
 import axios from 'axios';
 import { SearchOutlined } from '@ant-design/icons-vue';
+
+// Define props for host specification
+const props = defineProps({
+  host: {
+    type: String,
+    
+  }
+});
 
 // Reactive state
 const logs = ref([]);
@@ -88,6 +96,11 @@ const searchInput = ref(null);
 // Log columns definition
 const logColumns = [
   { title: 'Timestamp', dataIndex: '_time', key: 'timestamp' },
+  { 
+    title: 'Hostname', 
+    dataIndex: 'hostname', 
+    key: 'hostname' 
+  },
   { 
     title: 'Service', 
     dataIndex: 'app_name', 
@@ -117,6 +130,9 @@ const logColumns = [
 const filteredLogs = computed(() => {
   let logsToDisplay = logs.value;
   
+
+
+  // Filter by service name if search is active
   if (searchText.value && searchedColumn.value === 'app_name') {
     logsToDisplay = logsToDisplay.filter(log =>
       log.app_name.toLowerCase().includes(searchText.value.toLowerCase())
@@ -134,7 +150,7 @@ const filteredLogs = computed(() => {
 async function fetchLogs() {
   try {
     const response = await axios.get(
-      "http://82.165.230.7:9428/select/logsql/query?query=hostname:monitoring_server&start=5m",
+      `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}&start=5m`,
       {
         transformResponse: [
           (data) => {
