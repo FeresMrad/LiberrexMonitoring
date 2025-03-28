@@ -1,6 +1,17 @@
 <template>
   <div>
-    <h2>Log Entries</h2>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Log Entries</h2>
+      <a-button 
+        type="primary" 
+        @click="refreshLogs" 
+        :loading="isLoading"
+        class="ml-2"
+      >
+        <template #icon><RedoOutlined /></template>
+        Refresh
+      </a-button>
+    </div>
     <a-table 
       :columns="logColumns" 
       :data-source="filteredLogs" 
@@ -77,13 +88,13 @@
 <script setup>
 import { ref, computed, onMounted, defineProps } from 'vue';
 import axios from 'axios';
-import { SearchOutlined } from '@ant-design/icons-vue';
+import { SearchOutlined, RedoOutlined } from '@ant-design/icons-vue';
 
 // Define props for host specification
 const props = defineProps({
   host: {
     type: String,
-    
+    required: true
   }
 });
 
@@ -92,6 +103,7 @@ const logs = ref([]);
 const searchText = ref('');
 const searchedColumn = ref('');
 const searchInput = ref(null);
+const isLoading = ref(false);
 
 // Log columns definition
 const logColumns = [
@@ -125,8 +137,6 @@ const logColumns = [
 const filteredLogs = computed(() => {
   let logsToDisplay = logs.value;
   
-
-
   // Filter by service name if search is active
   if (searchText.value && searchedColumn.value === 'app_name') {
     logsToDisplay = logsToDisplay.filter(log =>
@@ -144,6 +154,7 @@ const filteredLogs = computed(() => {
 // Methods
 async function fetchLogs() {
   try {
+    isLoading.value = true;
     const response = await axios.get(
       `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}&start=5m`,
       {
@@ -161,6 +172,8 @@ async function fetchLogs() {
     logs.value = response.data;
   } catch (error) {
     console.error("Error fetching logs:", error);
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -168,7 +181,7 @@ function handleSearch(selectedKeys, confirm, dataIndex) {
   confirm();
   searchText.value = selectedKeys[0];
   searchedColumn.value = dataIndex;
-}
+} 
 
 function handleReset(clearFilters) {
   clearFilters();
@@ -227,6 +240,11 @@ function getSeverityClass(severity) {
     7: "debug",
   };
   return classes[severity] || "unknown";
+}
+
+// New method for manually refreshing logs
+function refreshLogs() {
+  fetchLogs();
 }
 
 // Fetch logs on component mount
