@@ -1,17 +1,22 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold">Log Entries</h2>
-      <a-button 
-        type="primary" 
-        @click="refreshLogs" 
-        :loading="isLoading"
-        class="ml-2"
-      >
-        <template #icon><RedoOutlined /></template>
-        Refresh
-      </a-button>
-    </div>
+    <div class="mb-4 flex items-center space-x-2">
+  <a-date-picker 
+    v-model:value="startDate" 
+    placeholder="Start Date" 
+    showTime
+  />
+  <a-date-picker 
+    v-model:value="endDate" 
+    placeholder="End Date" 
+    showTime
+  />
+  <a-button type="primary" @click="refreshLogs" :loading="isLoading">
+    <template #icon><RedoOutlined /></template>
+    Refresh
+  </a-button>
+</div>
+
     <a-table 
       :columns="logColumns" 
       :data-source="filteredLogs" 
@@ -104,6 +109,9 @@ const searchText = ref('');
 const searchedColumn = ref('');
 const searchInput = ref(null);
 const isLoading = ref(false);
+const startDate = ref(null);
+const endDate = ref(null);
+
 
 // Log columns definition
 const logColumns = [
@@ -155,19 +163,29 @@ const filteredLogs = computed(() => {
 async function fetchLogs() {
   try {
     isLoading.value = true;
-    const response = await axios.get(
-      `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}&start=5m`,
-      {
-        transformResponse: [
-          (data) => {
-            return data
-              .trim()
-              .split("\n")
-              .map(line => JSON.parse(line));
-          }
-        ]
-      }
-    );
+
+    let url = `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}`;
+
+    if (startDate.value && endDate.value) {
+      // Assuming your API expects ISO formatted date strings.
+      const startISO = new Date(startDate.value).toISOString();
+      const endISO = new Date(endDate.value).toISOString();
+      url += `&start=${startISO}&end=${endISO}`;
+    } else {
+      // Default to last 5 minutes if dates are not set
+      url += `&start=5m`;
+    }
+
+    const response = await axios.get(url, {
+      transformResponse: [
+        (data) => {
+          return data
+            .trim()
+            .split("\n")
+            .map(line => JSON.parse(line));
+        }
+      ]
+    });
     console.log("API Response:", response.data);
     logs.value = response.data;
   } catch (error) {
@@ -176,6 +194,7 @@ async function fetchLogs() {
     isLoading.value = false;
   }
 }
+
 
 function handleSearch(selectedKeys, confirm, dataIndex) {
   confirm();
