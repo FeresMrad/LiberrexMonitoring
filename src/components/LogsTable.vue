@@ -164,11 +164,18 @@ const filteredLogs = computed(() => {
 
 // Methods
 function disabledStartDate(current) {
-  // If an end date is selected, disable all dates after that.
+  const now = new Date(); // Assuming you're using dayjs
+
+  // Disable all future dates after today
+  if (current && current.isAfter(now, 'day')) {
+    return true;
+  }
+
+  // If an end date is selected, disable all dates after that
   if (endDate.value) {
-    // current is a moment or dayjs object, so use isAfter for comparison.
     return current && current.isAfter(endDate.value, 'day');
   }
+
   return false;
 }
 
