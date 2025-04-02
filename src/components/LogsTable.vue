@@ -5,17 +5,20 @@
     v-model:value="startDate" 
     placeholder="Start Date" 
     showTime
+    :disabledDate="disabledStartDate"
   />
   <a-date-picker 
     v-model:value="endDate" 
     placeholder="End Date" 
     showTime
+    :disabledDate="disabledEndDate"
   />
   <a-button type="primary" @click="refreshLogs" :loading="isLoading">
     <template #icon><RedoOutlined /></template>
     Refresh
   </a-button>
 </div>
+
 
     <a-table 
       :columns="logColumns" 
@@ -160,6 +163,23 @@ const filteredLogs = computed(() => {
 });
 
 // Methods
+function disabledStartDate(current) {
+  // If an end date is selected, disable all dates after that.
+  if (endDate.value) {
+    // current is a moment or dayjs object, so use isAfter for comparison.
+    return current && current.isAfter(endDate.value, 'day');
+  }
+  return false;
+}
+
+function disabledEndDate(current) {
+  // If a start date is selected, disable all dates before that.
+  if (startDate.value) {
+    return current && current.isBefore(startDate.value, 'day');
+  }
+  return false;
+}
+
 async function fetchLogs() {
   try {
     isLoading.value = true;
