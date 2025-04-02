@@ -203,21 +203,35 @@ async function fetchLogs() {
     const response = await axios.get(url, {
       transformResponse: [
         (data) => {
+          if (!data || data.trim() === "") {
+            return []; // Return an empty array instead of parsing
+          }
           return data
             .trim()
             .split("\n")
-            .map(line => JSON.parse(line));
+            .map(line => {
+              try {
+                return JSON.parse(line);
+              } catch (error) {
+                console.error("Error parsing log entry:", line);
+                return null; // Skip invalid JSON lines
+              }
+            })
+            .filter(log => log !== null); // Remove any null values
         }
       ]
     });
+
     console.log("API Response:", response.data);
     logs.value = response.data;
   } catch (error) {
     console.error("Error fetching logs:", error);
+    logs.value = []; // Ensure logs are set to an empty array on error
   } finally {
     isLoading.value = false;
   }
 }
+
 
 
 
