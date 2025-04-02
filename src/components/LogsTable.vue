@@ -166,14 +166,18 @@ async function fetchLogs() {
 
     let url = `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}`;
 
-    if (startDate.value && endDate.value) {
-      // Assuming your API expects ISO formatted date strings.
+    if (startDate.value) {
       const startISO = new Date(startDate.value).toISOString();
+      url += `&start=${startISO}`;
+    }
+
+    if (endDate.value) {
       const endISO = new Date(endDate.value).toISOString();
-      url += `&start=${startISO}&end=${endISO}`;
-    } else {
-      // Default to last 5 minutes if dates are not set
-      url += `&start=5m`;
+      url += `&end=${endISO}`;
+    }
+
+    if (!startDate.value && !endDate.value) {
+      url += `&start=5m`; // Default to last 5 minutes
     }
 
     const response = await axios.get(url, {
@@ -194,6 +198,7 @@ async function fetchLogs() {
     isLoading.value = false;
   }
 }
+
 
 
 function handleSearch(selectedKeys, confirm, dataIndex) {
