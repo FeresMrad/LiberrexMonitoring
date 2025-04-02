@@ -1,14 +1,14 @@
 <template>
   <div id="app">
-    <LogsTable />
+    <SpecsTable />
   </div>
 </template>
 
 <script>
-import LogsTable from '@/components/LogsTable.vue';
+import SpecsTable from '@/components/SpecsTable.vue';
 export default {
   components: {
-    LogsTable,
+    SpecsTable,
   },
 };
 </script>
