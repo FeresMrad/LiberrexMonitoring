@@ -26,7 +26,7 @@
           </tr>
           <tr>
             <td>SSH Service</td>
-            <td><router-link :to="`/entites/${props.host}/sshdetails`">Details</router-link></td>
+            <td><router-link :to="`/entities/${props.host}/sshdetails`">Details</router-link></td>
           </tr>
         </tbody>
       </table>

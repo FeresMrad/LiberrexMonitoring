@@ -50,6 +50,16 @@
           </span>
           <span v-else>{{ text }}</span>
         </template>
+        <template v-else-if="column.dataIndex === '_msg'">
+  <span v-if="searchText && searchedColumn === '_msg'">
+    <template v-for="(frag, i) in highlightText(text.toString(), searchText)" :key="i">
+      <mark v-if="frag.highlight" class="highlight">{{ frag.text }}</mark>
+      <span v-else>{{ frag.text }}</span>
+    </template>
+  </span>
+  <span v-else>{{ text }}</span>
+</template>
+
 
         <!-- For Log Message -->
         <template v-else>
@@ -59,31 +69,32 @@
 
       <!-- Custom filter dropdown for the Service column -->
       <template v-slot:customFilterDropdown="{
-        setSelectedKeys, selectedKeys, confirm, clearFilters, column
-      }">
-        <div style="padding: 8px">
-          <a-input
-            ref="searchInput"
-            :placeholder="`Search ${column.title}`"
-            :value="selectedKeys[0]"
-            style="width: 188px; margin-bottom: 8px; display: block"
-            @input="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
-            @pressEnter="() => handleSearch(selectedKeys, confirm, column.dataIndex)"
-          />
-          <a-button
-            type="primary"
-            size="small"
-            style="width: 90px; margin-right: 8px"
-            @click="() => handleSearch(selectedKeys, confirm, column.dataIndex)"
-          >
-            <SearchOutlined />
-            Search
-          </a-button>
-          <a-button size="small" style="width: 90px" @click="() => handleReset(clearFilters)">
-            Reset
-          </a-button>
-        </div>
-      </template>
+  setSelectedKeys, selectedKeys, confirm, clearFilters, column
+}">
+  <div style="padding: 8px">
+    <a-input
+      ref="searchInput"
+      :placeholder="`Search ${column.title}`"
+      :value="selectedKeys[0]"
+      style="width: 188px; margin-bottom: 8px; display: block"
+      @input="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
+      @pressEnter="() => handleSearch(selectedKeys, confirm, column.dataIndex)"
+    />
+    <a-button
+      type="primary"
+      size="small"
+      style="width: 90px; margin-right: 8px"
+      @click="() => handleSearch(selectedKeys, confirm, column.dataIndex)"
+    >
+      <SearchOutlined />
+      Search
+    </a-button>
+    <a-button size="small" style="width: 90px" @click="() => handleReset(clearFilters)">
+      Reset
+    </a-button>
+  </div>
+</template>
+
 
       <!-- Custom filter icon -->
       <template #customFilterIcon="{ filtered }">
@@ -141,17 +152,29 @@ const logColumns = [
     key: 'app_name', 
     customFilterDropdown: true 
   },
-  { title: 'Log Message', dataIndex: '_msg', key: 'message' },
+  { 
+    title: 'Log Message', 
+    dataIndex: '_msg', 
+    key: 'message', 
+    customFilterDropdown: true // ✅ Enable custom filtering
+  }
 ];
 
 // Computed property for filtered and sorted logs
 const filteredLogs = computed(() => {
   let logsToDisplay = logs.value;
-  
-  // Filter by service name if search is active
+
+  // Filter by service name
   if (searchText.value && searchedColumn.value === 'app_name') {
     logsToDisplay = logsToDisplay.filter(log =>
       log.app_name.toLowerCase().includes(searchText.value.toLowerCase())
+    );
+  }
+
+  // ✅ Filter by log message
+  if (searchText.value && searchedColumn.value === '_msg') {
+    logsToDisplay = logsToDisplay.filter(log =>
+      log._msg.toLowerCase().includes(searchText.value.toLowerCase())
     );
   }
 
@@ -161,6 +184,7 @@ const filteredLogs = computed(() => {
     return timeB - timeA;
   });
 });
+
 
 // Methods
 function disabledStartDate(current) {
