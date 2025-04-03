@@ -75,7 +75,7 @@
         const uptimeSeconds = uptimeResponse.results[0]?.series[0]?.values?.[0]?.[1] || 0;
         
         // Calculate system boot time
-        const bootTime = new Date(Date.now() - uptimeSeconds * 1000).toLocaleString("fr");
+        const bootTime = new Date(Date.now() - uptimeSeconds * 1000).toLocaleString("en-GB");
 
         uptime.value = bootTime;
 

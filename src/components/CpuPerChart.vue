@@ -57,7 +57,7 @@ const formatDate = (timestamp) => {
   let date = !isNaN(timestamp) && timestamp.toString().length > 12 
     ? new Date(parseInt(timestamp) / 1e6)
     : new Date(timestamp)
-  return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString('fr', { minute: 'numeric', hour: 'numeric', day: 'numeric', month: 'short' })
+  return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString('en-GB', { minute: 'numeric', hour: 'numeric', day: 'numeric', month: 'short' })
 }
 
 /**

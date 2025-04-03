@@ -131,10 +131,10 @@
             const lastUptimeTimestamp = new Date(lastUptimeTimestampStr);
             const uptimeSeconds = uptimeValues[0][1];
             const currentTime = new Date();
-            systemBootTime = new Date(currentTime.getTime() - uptimeSeconds * 1000).toLocaleString("fr");
+            systemBootTime = new Date(currentTime.getTime() - uptimeSeconds * 1000).toLocaleString("en-GB");
             activity =
               (currentTime.getTime() - lastUptimeTimestamp.getTime()) / 1000 > 61
-                ? { isDown: true, timestamp: lastUptimeTimestamp.toLocaleString("fr") }
+                ? { isDown: true, timestamp: lastUptimeTimestamp.toLocaleString("en-GB") }
                 : { isDown: false };
           } else {
             activity = { isDown: true, timestamp: "Unknown" };

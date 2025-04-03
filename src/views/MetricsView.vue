@@ -2,7 +2,7 @@
   <a-layout style="min-height: 100vh">
     <HiHello>
       <div class="containers">
-        <h2 class="chart-title">Metrics for Host: {{ host }}</h2>
+        <h2 class="chart-title">{{ host }}</h2>
 
         <!-- Top row: Uptime component and three GaugeChart components -->
         <div class="top-row">

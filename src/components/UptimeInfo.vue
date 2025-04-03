@@ -59,7 +59,7 @@ const fetchUptime = async () => {
       if (diffSeconds > 60) {
         uptimeInfo.value = {
           isDown: true,
-          displayText: lastUptimeTimestamp.toLocaleString("fr"),
+          displayText: lastUptimeTimestamp.toLocaleString("en-GB"),
           lastUptimeTimestamp,
         };
       } else {
