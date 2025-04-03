@@ -8,7 +8,7 @@
           <div class="top-row">
             <FailedSsh :host="host" />
             <FailedSsh :host="host" />
-            <FailedSsh :host="host" />
+            <UniqueFailedSsh :host="host" />
           </div>
   
           <!-- Main content: split into two -->
@@ -43,6 +43,7 @@
   import MemPerChart from "@/components/MemPerChart.vue"
   import SshTable from '@/components/SshTable.vue'
   import FailedSsh from '@/components/FailedSsh.vue'
+  import UniqueFailedSsh from '@/components/UniqueFailedSsh.vue'
   
   // Define the host for usage within the component
   const route = useRoute()
