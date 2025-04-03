@@ -23,7 +23,7 @@
           <div class="chart-item">
             <MemPerChart :host="host" />
           </div>
-          <div class="chart-item empty"></div>
+          <div class="chart-item empty"> Temperature Chart TBD</div>
           <div class="chart-item">
             <NetworkioChart :host="host" />
           </div>
