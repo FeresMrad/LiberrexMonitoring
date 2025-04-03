@@ -6,9 +6,9 @@
   
           <!-- Top row with 3 rectangles -->
           <div class="top-row">
-            <div class="rectangle">Rectangle 1</div>
-            <div class="rectangle">Rectangle 2</div>
-            <div class="rectangle">Rectangle 3</div>
+            <FailedSsh :host="host" />
+            <FailedSsh :host="host" />
+            <FailedSsh :host="host" />
           </div>
   
           <!-- Main content: split into two -->
@@ -42,6 +42,7 @@
   import CpuPerChart from "@/components/CpuPerChart.vue"
   import MemPerChart from "@/components/MemPerChart.vue"
   import SshTable from '@/components/SshTable.vue'
+  import FailedSsh from '@/components/FailedSsh.vue'
   
   // Define the host for usage within the component
   const route = useRoute()
@@ -64,12 +65,12 @@
   
   /* Top row styling: 3 rectangles */
   .top-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    width: 100%;
-    margin-bottom: 20px;
-  }
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 20px;
+}
   
   /* Rectangle styles */
   .rectangle {
