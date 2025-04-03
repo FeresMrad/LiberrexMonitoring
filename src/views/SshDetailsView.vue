@@ -17,11 +17,11 @@
             <div class="left-split">
               <div class="left-top">
                 <!-- Add content to the top part of the left split -->
-                <CpuPerChart :host="host" />
+                <FailedSshDoughnut :host="host" />
               </div>
               <div class="left-bottom">
                 <!-- Add content to the bottom part of the left split -->
-                <MemPerChart :host="host" />
+                <FailedSshDoughnut :host="host" />
               </div>
             </div>
   
@@ -39,11 +39,10 @@
   import { ref } from 'vue'
   import { useRoute } from 'vue-router'
   import HiHello from "@/components/HiHello.vue"
-  import CpuPerChart from "@/components/CpuPerChart.vue"
-  import MemPerChart from "@/components/MemPerChart.vue"
   import SshTable from '@/components/SshTable.vue'
   import FailedSsh from '@/components/FailedSsh.vue'
   import UniqueFailedSsh from '@/components/UniqueFailedSsh.vue'
+  import FailedSshDoughnut from '@/components/FailedSshDoughnut.vue'
   
   // Define the host for usage within the component
   const route = useRoute()

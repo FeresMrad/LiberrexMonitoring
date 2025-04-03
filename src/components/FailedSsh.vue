@@ -25,7 +25,7 @@
   
     try {
       const response = await fetch(
-        `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=5m`
+        `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=15m`
       )
   
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
