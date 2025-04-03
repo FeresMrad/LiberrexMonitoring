@@ -23,15 +23,14 @@
           <div class="chart-item">
             <MemPerChart :host="host" />
           </div>
-          <div><SpecsTable :host="host" /></div>
-
+          <div class="chart-item empty"></div>
           <div class="chart-item">
             <NetworkioChart :host="host" />
           </div>
           <div class="chart-item">
             <DiskioChart :host="host" />
-          </div>
-          <div class="chart-item empty"></div>
+          </div>          
+          <div><SpecsTable :host="host" /></div>
         </div>
 
         <!-- Table Component: logstable -->
