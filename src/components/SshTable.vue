@@ -129,8 +129,8 @@
     try {
       isLoading.value = true;
   
-      let url = `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}`;
-      url += `&start=1h`; // Default to last 5 minutes
+      let url = `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd`;
+      url += `&start=5m`; // Default to last 5 minutes
   
       const response = await axios.get(url, {
         transformResponse: [

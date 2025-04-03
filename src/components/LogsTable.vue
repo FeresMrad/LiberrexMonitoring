@@ -25,7 +25,6 @@
       :data-source="filteredLogs" 
       :pagination="true" 
       rowKey="log._stream_id"
-      size="small"
     >
       <!-- Custom cell rendering for various columns -->
       <template #bodyCell="{ column, text }">
