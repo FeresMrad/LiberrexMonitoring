@@ -106,10 +106,9 @@ const host = ref(route.params.host)
 .right-table {
   flex: 1;
   border: 1px solid #ccc;
-  padding: 20px;
   border-radius: 8px;
   background-color: #f9f9f9;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  height: 100%;
+  
 }
 </style>

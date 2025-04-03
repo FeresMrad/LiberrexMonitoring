@@ -149,7 +149,6 @@ const toggleSidebar = () => {
 /* MAIN CONTENT AREA */
 .content-layout {
   padding: 16px;
-  margin-left: 50px; /* Add margin to the left for sidebar */
 }
 
 /* FOOTER */
