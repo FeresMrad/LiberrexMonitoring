@@ -3,8 +3,8 @@
       <table>
         <thead>
           <tr>
-            <th>Resource</th>
-            <th>Value</th>
+            <th>Parameter</th>
+            <th>Status / Value</th>
           </tr>
         </thead>
         <tbody>
@@ -21,8 +21,12 @@
             <td>{{ ipAddress }}</td>
           </tr>
           <tr>
-            <td>System Boot</td>
+            <td>System Boot Time</td>
             <td>{{ uptime }}</td>
+          </tr>
+          <tr>
+            <td>SSH Service</td>
+            <td><router-link :to="`/entites/${props.host}/sshdetails`">Details</router-link></td>
           </tr>
         </tbody>
       </table>
