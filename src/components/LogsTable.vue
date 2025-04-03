@@ -276,7 +276,7 @@ function highlightText(text, searchText) {
 
 function formatTimestamp(timestamp) {
   const date = new Date(timestamp);
-  return date.toLocaleString("fr-FR");
+  return date.toLocaleString("en-GB");
 }
 
 function getSeverityText(severity) {
