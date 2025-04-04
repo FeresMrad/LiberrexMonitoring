@@ -49,7 +49,7 @@ const fetchFailedSSHData = async () => {
 
   try {
     const response = await fetch(
-      `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=300m`
+      `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=15m`
     )
 
     if (!response.ok) {
@@ -107,8 +107,9 @@ thead {
 
 th, td {
   padding: 8px;
-  border-top: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
 }
 
 /* Column-specific styling */
