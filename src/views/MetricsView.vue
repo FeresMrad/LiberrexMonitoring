@@ -115,6 +115,6 @@ const host = ref(route.params.host)
 /* Table container styling */
 .table-container {
   width: 100%;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 </style>
