@@ -4,25 +4,25 @@
       <div v-if="loading">Loading...</div>
       <div v-else-if="error">Error: {{ error }}</div>
       <div v-else class="chart-container">
-  <Doughnut :data="chartData" :options="chartOptions" />
-  <div class="custom-legend">
-    <table>
-      <tbody>
-        <tr v-for="(count, user) in userCounts" :key="user">
-          <td class="legend-color-cell">
-            <span class="legend-color" :style="{ backgroundColor: userColors[user] }"></span>
-          </td>
-          <td class="legend-user">{{ user }}</td>
-          <td class="legend-count">{{ count }}</td>
-          <td class="legend-percent">
-            {{ ((count / totalAttempts) * 100).toFixed(1) }}%
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
+        <Doughnut :data="chartData" :options="chartOptions" />
+        <div class="custom-legend">
+          <table>
+            <tbody>
+              <!-- Sort the users by their failed login count -->
+              <tr v-for="(count, user) in sortedUserCounts" :key="user">
+                <td class="legend-color-cell">
+                  <span class="legend-color" :style="{ backgroundColor: userColors[user] }"></span>
+                </td>
+                <td class="legend-user">{{ user }}</td>
+                <td class="legend-count">{{ count }}</td>
+                <td class="legend-percent">
+                  {{ ((count / totalAttempts) * 100).toFixed(1) }}%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </template>
   
@@ -68,7 +68,7 @@
           userCounts.value[match[1]] = (userCounts.value[match[1]] || 0) + 1
         }
       })
-  
+      
       // Generate a unique color for each user
       const users = Object.keys(userCounts.value)
       users.forEach((user, i) => {
@@ -89,6 +89,16 @@
   // Compute total attempts
   const totalAttempts = computed(() => {
     return Object.values(userCounts.value).reduce((sum, count) => sum + count, 0)
+  })
+  
+  // Sort users by the number of attempts
+  const sortedUserCounts = computed(() => {
+    return Object.entries(userCounts.value)
+      .sort(([, countA], [, countB]) => countB - countA) // Sort by count descending
+      .reduce((acc, [user, count]) => {
+        acc[user] = count
+        return acc
+      }, {})
   })
   
   // Build chart data from the counted users
@@ -116,7 +126,7 @@
       legend: {
         display: false // Hide default legend in favor of custom table
       },
-      tooltip:{
+      tooltip: {
         enabled: false
       }
     }
@@ -136,33 +146,31 @@
   
   /* Chart container */
   .chart-container {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+  }
   
-}
-
-.chart-container > canvas {
-  flex-shrink: 0;
-  width: 350px !important;
-  height: 220px !important;
-  margin-left: -100px;
-  margin-right: -80px;
-}
-
-.custom-legend {
-  flex-grow: 1;
-  max-width: 220px; /* Prevent it from stretching too much */
-  text-align: left;
-  overflow-y: auto;
-  max-height: 250px; /* 👈 Adjust based on design */
-}
-
-.custom-legend table {
-  width: 100%;
-}
-
+  .chart-container > canvas {
+    flex-shrink: 0;
+    width: 350px !important;
+    height: 220px !important;
+    margin-left: -100px;
+    margin-right: -80px;
+  }
+  
+  .custom-legend {
+    flex-grow: 1;
+    max-width: 220px; /* Prevent it from stretching too much */
+    text-align: left;
+    overflow-y: auto;
+    max-height: 250px; /* 👈 Adjust based on design */
+  }
+  
+  .custom-legend table {
+    width: 100%;
+  }
   
   .custom-legend table {
     border-collapse: collapse;
