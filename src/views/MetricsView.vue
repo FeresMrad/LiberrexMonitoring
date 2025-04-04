@@ -32,7 +32,9 @@
           <div class="chart-item">
             <DiskioChart :host="host" />
           </div>          
-          <div><SpecsTable :host="host" /></div>
+          <div class ="chart-item">
+            <SpecsTable :host="host" />
+          </div>
         </div>
 
         <!-- Table Component: logstable -->

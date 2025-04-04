@@ -72,7 +72,7 @@ const fetchFailedSSHData = async () => {
     // Generate a unique color for each user
     const users = Object.keys(userCounts.value)
     users.forEach((user, i) => {
-      userColors.value[user] = `hsl(${(i * 360 / users.length)}, 70%, 50%)`
+      userColors.value[user] = `hsl(${(i * 360 / users.length)}, 90%, 70%)` //change chart colors here
     })
     
   } catch (err) {
@@ -124,7 +124,7 @@ const chartOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      display: false // Hide default legend in favor of custom table
+      display: false 
     },
     tooltip: {
       enabled: false
@@ -136,6 +136,7 @@ const chartOptions = {
 <style scoped>
 .failed-ssh-doughnut {
   text-align: center;
+  margin-top: 8px;
 }
 
 h3 {
@@ -156,7 +157,7 @@ h3 {
   flex-shrink: 0;
   width: 350px !important;
   height: 220px !important;
-  margin-left: -100px;
+  margin-left: -90px;
   margin-right: -80px;
 }
 

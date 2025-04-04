@@ -64,7 +64,7 @@
   
         <!-- Custom filter icon -->
         <template #customFilterIcon="{ filtered }">
-          <SearchOutlined :style="{ color: filtered ? '#108ee9' : undefined }" />
+          <SearchOutlined :style="{ color: filtered ? '#FFFFFF' : '#FFFFFF' }" />
         </template>
       </a-table>
     </div>
