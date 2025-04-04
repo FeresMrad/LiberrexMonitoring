@@ -147,14 +147,16 @@
   flex-shrink: 0;
   width: 350px !important;
   height: 220px !important;
-  margin-left: -80px;
-  margin-right: -60px;
+  margin-left: -100px;
+  margin-right: -80px;
 }
 
 .custom-legend {
   flex-grow: 1;
-  max-width: 200px; /* Prevent it from stretching too much */
+  max-width: 220px; /* Prevent it from stretching too much */
   text-align: left;
+  overflow-y: auto;
+  max-height: 250px; /* 👈 Adjust based on design */
 }
 
 .custom-legend table {
