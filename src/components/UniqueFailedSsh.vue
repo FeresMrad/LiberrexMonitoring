@@ -72,14 +72,14 @@
   
   h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 20px;
   }
   
   .count {
-    font-size: 24px;
+    font-size: 50px;
     font-weight: bold;
     color: red;
-    margin-top: 10px;
+    margin-bottom: 0px;
   }
   </style>
   

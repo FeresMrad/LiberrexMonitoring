@@ -1,6 +1,6 @@
 <template>
     <div class="failed-ssh">
-      <h3>Total Failed Connections</h3>
+      <h3>Failed Connections</h3>
       <p v-if="loading">Loading...</p>
       <p v-else-if="error">Error: {{ error }}</p>
       <p v-else class="count">{{ failedCount }}</p>
@@ -58,14 +58,14 @@
   
   h3 {
     margin: 0;
-    font-size: px;
+    font-size: 20px;
   }
   
   .count {
-    font-size: 40px;
+    font-size: 55px;
     font-weight: bold;
-    color: red;
-    margin-top: 10px;
+    color: rgba(255, 0, 0, 0.664);
+    margin-bottom: -50px;
   }
   </style>
   
