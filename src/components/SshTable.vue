@@ -96,7 +96,7 @@
       title: 'Timestamp', 
       dataIndex: '_time', 
       key: 'timestamp',
-      width: 180,
+      width: 130,
       fixed: 'left'
     },
     { 
@@ -130,7 +130,7 @@
       isLoading.value = true;
   
       let url = `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd`;
-      url += `&start=15m`; // Default to last 5 minutes
+      url += `&start=60m`; // Default to last 5 minutes
   
       const response = await axios.get(url, {
         transformResponse: [
@@ -209,7 +209,8 @@
   .compact-table :deep(.ant-table-thead > tr > th) {
     padding: 8px 8px;
     font-size: 14px;
-    background-color: #f0f2f5;
+    background-color: #008fca;
+    color: white;
   }
   
   .compact-table :deep(.ant-table-tbody > tr > td) {

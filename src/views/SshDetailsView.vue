@@ -21,16 +21,16 @@
             <div class="chart-box">
               <FailedSshDoughnut :host="host" />
             </div>
-            <div >
+            <div class ="chart-box">
               <FailedSshIpTable :host="host" />
             </div>
-            <div >
+            <div class ="chart-box">
               <FailedSshIpTable :host="host" />
             </div>
           </div>
 
           <!-- Right side: Table -->
-          <div class="right-table">
+          <div class="right-table chart-box">
             <SshTable :host="host" />
           </div>
         </div>
@@ -71,7 +71,7 @@ const host = ref(route.params.host)
 /* Top row styling: 3 rectangles */
 .top-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   width: 100%;
   margin-bottom: 20px;
@@ -97,7 +97,7 @@ const host = ref(route.params.host)
 /* Chart box styling */
 .chart-box {
   border: 1px solid #ccc;
-  padding: 20px;
+  padding: 5px;
   border-radius: 8px;
   background-color: #f9f9f9;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -110,6 +110,7 @@ const host = ref(route.params.host)
   border-radius: 8px;
   background-color: #f9f9f9;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  
+  width:100%;
+  overflow: auto;
 }
 </style>

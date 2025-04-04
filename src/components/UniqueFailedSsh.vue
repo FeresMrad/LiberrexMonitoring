@@ -1,6 +1,6 @@
 <template>
     <div class="failed-ssh">
-      <h3>Total Failed Connections - Unique IP</h3>
+      <h3>Failed Connections - Unique IP</h3>
       <p v-if="loading">Loading...</p>
       <p v-else-if="error">Error: {{ error }}</p>
       <p v-else class="count">{{ uniqueCount }}</p>
@@ -25,7 +25,7 @@
   
     try {
       const response = await fetch(
-        `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=15m`
+        `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=60m`
       )
   
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
@@ -76,9 +76,10 @@
   }
   
   .count {
-    font-size: 50px;
+    font-size: 40px;
     font-weight: bold;
-    color: red;
+    color: rgba(255, 0, 0, 0.664);
+    margin-top: 5px;
     margin-bottom: 0px;
   }
   </style>

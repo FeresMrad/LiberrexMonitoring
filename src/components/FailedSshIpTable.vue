@@ -49,7 +49,7 @@ const fetchFailedSSHData = async () => {
 
   try {
     const response = await fetch(
-      `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=15m`
+      `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=60m`
     )
 
     if (!response.ok) {
@@ -86,7 +86,7 @@ watch(() => props.host, fetchFailedSSHData)
   text-align: center;
   padding: 10px;
   max-width: 500px;
-  margin: 0 auto;
+  margin-top: -5px;
 }
 
 /* Table layout */
@@ -94,6 +94,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  margin-top: 5px;
 }
 
 /* Sticky header */
@@ -110,6 +111,7 @@ th, td {
   border-bottom: 1px solid #ccc;
   border-left: 1px solid #ccc;
   border-right: 1px solid #ccc;
+
 }
 
 /* Column-specific styling */

@@ -25,7 +25,7 @@
   
     try {
       const response = await fetch(
-        `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=15m`
+        `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=60m`
       )
   
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
@@ -62,9 +62,10 @@
   }
   
   .count {
-    font-size: 55px;
+    font-size: 40px;
     font-weight: bold;
     color: rgba(255, 0, 0, 0.664);
+    margin-top: 5px;
     margin-bottom: -50px;
   }
   </style>

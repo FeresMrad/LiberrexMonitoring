@@ -1,24 +1,25 @@
 <template>
   <div>
-    <div class="mb-4 flex items-center space-x-2">
-  <a-date-picker 
-    v-model:value="startDate" 
-    placeholder="Start Date" 
-    showTime
-    :disabledDate="disabledStartDate"
-  />
-  <a-date-picker 
-    v-model:value="endDate" 
-    placeholder="End Date" 
-    showTime
-    :disabledDate="disabledEndDate"
-  />
-  <a-button type="primary" @click="refreshLogs" :loading="isLoading">
-    <template #icon><RedoOutlined /></template>
-    Refresh
-  </a-button>
-</div>
-
+    <div style="margin-bottom: 16px;">
+      <a-date-picker 
+        v-model:value="startDate" 
+        placeholder="Start Date" 
+        showTime
+        :disabledDate="disabledStartDate"
+        style="margin-right: 8px;"
+      />
+      <a-date-picker 
+        v-model:value="endDate" 
+        placeholder="End Date" 
+        showTime
+        :disabledDate="disabledEndDate"
+        style="margin-right: 8px;"
+      />
+      <a-button type="primary" @click="refreshLogs" :loading="isLoading">
+        <template #icon><RedoOutlined /></template>
+        Refresh
+      </a-button>
+    </div>
 
     <a-table 
       :columns="logColumns" 
@@ -51,15 +52,14 @@
           <span v-else>{{ text }}</span>
         </template>
         <template v-else-if="column.dataIndex === '_msg'">
-  <span v-if="searchText && searchedColumn === '_msg'">
-    <template v-for="(frag, i) in highlightText(text.toString(), searchText)" :key="i">
-      <mark v-if="frag.highlight" class="highlight">{{ frag.text }}</mark>
-      <span v-else>{{ frag.text }}</span>
-    </template>
-  </span>
-  <span v-else>{{ text }}</span>
-</template>
-
+          <span v-if="searchText && searchedColumn === '_msg'">
+            <template v-for="(frag, i) in highlightText(text.toString(), searchText)" :key="i">
+              <mark v-if="frag.highlight" class="highlight">{{ frag.text }}</mark>
+              <span v-else>{{ frag.text }}</span>
+            </template>
+          </span>
+          <span v-else>{{ text }}</span>
+        </template>
 
         <!-- For Log Message -->
         <template v-else>
@@ -94,7 +94,6 @@
     </a-button>
   </div>
 </template>
-
 
       <!-- Custom filter icon -->
       <template #customFilterIcon="{ filtered }">
