@@ -58,11 +58,11 @@
   
   h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: px;
   }
   
   .count {
-    font-size: 24px;
+    font-size: 40px;
     font-weight: bold;
     color: red;
     margin-top: 10px;

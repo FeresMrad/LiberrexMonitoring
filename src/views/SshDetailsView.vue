@@ -2,7 +2,7 @@
   <a-layout style="min-height: 100vh">
     <HiHello>
       <div class="containers">
-        <h2 class="chart-title">{{ host }}</h2>
+        <h2 class="chart-title">SSH Details for {{ host }}</h2>
 
         <!-- Top row with 3 rectangles -->
         <div class="top-row">
@@ -101,7 +101,6 @@ const host = ref(route.params.host)
   border-radius: 8px;
   background-color: #f9f9f9;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px;
 }
 
 /* Right side: Table */
