@@ -21,11 +21,11 @@
             <div class="chart-box">
               <FailedSshDoughnut :host="host" />
             </div>
-            <div class="chart-box">
-              <FailedSshDoughnut :host="host" />
+            <div >
+              <FailedSshIpTable :host="host" />
             </div>
-            <div class="chart-box">
-              <FailedSshDoughnut :host="host" />
+            <div >
+              <FailedSshIpTable :host="host" />
             </div>
           </div>
 
@@ -47,6 +47,7 @@ import SshTable from '@/components/SshTable.vue'
 import FailedSsh from '@/components/FailedSsh.vue'
 import UniqueFailedSsh from '@/components/UniqueFailedSsh.vue'
 import FailedSshDoughnut from '@/components/FailedSshDoughnut.vue'
+import FailedSshIpTable from '@/components/FailedSshIpTable.vue'
 
 // Define the host for usage within the component
 const route = useRoute()

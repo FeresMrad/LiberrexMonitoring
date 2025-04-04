@@ -1,6 +1,6 @@
 <template>
     <div class="failed-ssh-doughnut">
-      <h3>Failed SSH Logins by User</h3>
+      <h3>Failed Connections by User</h3>
       <div v-if="loading">Loading...</div>
       <div v-else-if="error">Error: {{ error }}</div>
       <div v-else class="chart-container">
