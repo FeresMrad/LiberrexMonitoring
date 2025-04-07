@@ -33,8 +33,8 @@
               <span>Entities</span>
             </a-menu-item>
           </router-link>
-          <router-link to="/alertes">
-            <a-menu-item key="alertes">
+          <router-link to="/alerts">
+            <a-menu-item key="alerts">
               <warning-outlined />
               <span>Alerts</span>
             </a-menu-item>
@@ -66,7 +66,7 @@ const updateSelectedKeys = () => {
   const pathMap = {
     "/dashboard": ["dashboard"],
     "/entities": ["entities"],
-    "/alertes": ["alertes"],
+    "/alerts": ["alerts"],
   };
   selectedKeys.value = pathMap[route.path] ;
 };

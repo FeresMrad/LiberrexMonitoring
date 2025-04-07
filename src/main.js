@@ -11,7 +11,7 @@ import TestView from "./views/TestView.vue";
 import SshDetailsView from "./views/SshDetailsView.vue";
 
 const routes = [
-  { path: "/test", component: TestView},
+  { path: "/alerts", component: TestView},
   { path: "/entities/:host", component: MetricsView },
   { path: "/dashboard", component: DashboardView },
   { path: "/entities", component: EntitiesView },
