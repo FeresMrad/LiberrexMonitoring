@@ -15,8 +15,7 @@
       <Line v-if="loaded" :data="chartData" :options="{ 
         maintainAspectRatio: false,
         interaction: { intersect: false },
-        scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 15 } } },
-        
+        scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 15 } } }
       }" />
     </div>
   </div>
@@ -24,8 +23,8 @@
 
 <script setup>
 import { shallowRef, ref, onMounted, onUnmounted, defineProps } from 'vue'
-import axios from 'axios'
-import { io } from 'socket.io-client'
+import api from '@/services/api'
+import websocket from '@/services/websocket'
 import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip, Legend, Filler } from 'chart.js'
 import { Line } from 'vue-chartjs'
 
@@ -51,13 +50,31 @@ const chartData = shallowRef({
 })
 
 const loaded = ref(false)
-const socket = io('http://82.165.230.7:5000')
 
 const formatDate = (timestamp) => {
-  let date = !isNaN(timestamp) && timestamp.toString().length > 12 
-    ? new Date(parseInt(timestamp) / 1e6)
-    : new Date(timestamp)
-  return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString('en-GB', { minute: 'numeric', hour: 'numeric', day: 'numeric', month: 'short' })
+  let date;
+  
+  // If timestamp is a number (presumed to be nanoseconds from InfluxDB)
+  if (!isNaN(timestamp) && timestamp.toString().length > 12) {
+    date = new Date(parseInt(timestamp) / 1e6);
+  } 
+  // If timestamp is a string representing milliseconds (from WebSocket)
+  else if (typeof timestamp === 'string' && !isNaN(Number(timestamp))) {
+    date = new Date(Number(timestamp));
+  } 
+  // If timestamp is already a Date object or a date string
+  else {
+    date = new Date(timestamp);
+  }
+
+  return isNaN(date.getTime()) 
+    ? "Invalid Date" 
+    : date.toLocaleString('en-GB', { 
+        minute: 'numeric', 
+        hour: 'numeric', 
+        day: 'numeric', 
+        month: 'short' 
+      });
 }
 
 /**
@@ -65,19 +82,16 @@ const formatDate = (timestamp) => {
  * Uses the passed host prop in the query.
  */
 const fetchData = async (timeRange = null) => {
-  // Use the host prop instead of hardcoding "remote_machine"
-  let query = `SELECT percent FROM cpu WHERE host='${props.host}'`
-  if (timeRange) query += ` AND time > now() - ${timeRange} ORDER BY time ASC`
-
   try {
-    const response = await axios.get("http://82.165.230.7:8086/query", {
-      params: { db: "metrics", q: query, u: "liberrex", p: "test" }
-    })
-
-    const data = response.data.results[0]?.series[0]?.values || []
+    const response = await api.getCpuMetrics(props.host, timeRange)
+    
     chartData.value = {
-      labels: data.map(item => formatDate(item[0])),
-      datasets: [{ ...chartData.value.datasets[0], data: data.map(item => item[1]), pointRadius: 0 }]
+      labels: response.data.map(item => formatDate(item.time)),
+      datasets: [{ 
+        ...chartData.value.datasets[0], 
+        data: response.data.map(item => item.percent), 
+        pointRadius: 0 
+      }]
     }
     loaded.value = true
   } catch (error) {
@@ -85,22 +99,33 @@ const fetchData = async (timeRange = null) => {
   }
 }
 
-const handleNewData = (data) => {
+// Handler for WebSocket updates
+const handleMetricUpdate = (data) => {
   if (data.measurement === 'cpu' && data.host === props.host) {
     chartData.value = {
       labels: [...chartData.value.labels, formatDate(data.time)],
-      datasets: [{ ...chartData.value.datasets[0], data: [...chartData.value.datasets[0].data, data.fields.percent] }]
+      datasets: [{ 
+        ...chartData.value.datasets[0], 
+        data: [...chartData.value.datasets[0].data, data.fields.percent] 
+      }]
     }
   }
 }
 
 onMounted(() => {
+  // Initial data fetch
   fetchData('1h')
-  socket.on('new_data', handleNewData)
+  
+  // Subscribe to WebSocket updates
+  websocket.connect()
+  websocket.subscribeToHost(props.host)
+  websocket.addEventListener('metric_update', handleMetricUpdate)
 })
 
 onUnmounted(() => {
-  socket.off('new_data', handleNewData)
+  // Cleanup WebSocket listeners and subscriptions
+  websocket.removeEventListener('metric_update', handleMetricUpdate)
+  websocket.unsubscribeFromHost(props.host)
 })
 </script>
 

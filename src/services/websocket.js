@@ -2,8 +2,9 @@
 import { io } from 'socket.io-client';
 import { ref } from 'vue';
 
-// WebSocket configuration
-const SOCKET_URL = process.env.VUE_APP_SOCKET_URL || '/socket.io';
+// WebSocket configuration - explicitly set the URL
+// When using the Vue dev server with proxy, we don't need the full URL, just the path
+const socket_path = '/socket.io'; // This will be proxied according to the vue.config.js
 
 // Create a reactive reference to track connection status
 const isConnected = ref(false);
@@ -21,10 +22,18 @@ const listeners = {};
 const connect = () => {
   if (socket) return;
 
-  socket = io(SOCKET_URL);
+  // Create with explicit Socket.IO configuration
+  socket = io({
+    path: socket_path,
+    transports: ['websocket', 'polling'], // Try WebSocket first, fall back to polling
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+    timeout: 20000
+  });
 
   socket.on('connect', () => {
-    console.log('WebSocket connected');
+    console.log('WebSocket connected successfully');
     isConnected.value = true;
     
     // Re-subscribe to previously subscribed hosts
@@ -40,6 +49,7 @@ const connect = () => {
 
   // Listen for metric updates
   socket.on('metric_update', (data) => {
+    console.log('Received metric update:', data.measurement);
     emitEvent('metric_update', data);
   });
 
