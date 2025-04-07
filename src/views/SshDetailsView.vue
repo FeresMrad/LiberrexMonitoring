@@ -4,7 +4,13 @@
       <div class="containers">
         <h2 class="chart-title">SSH Details for {{ host }}</h2>
 
-        <!-- Date range pickers -->
+        <!-- Time range indicator - only shown when using default 60m filter -->
+        <div v-if="isDefaultTimeRange" class="time-range-indicator">
+          <ClockCircleOutlined /> 
+          <span>Showing data from the last hour</span>
+        </div>
+
+        <!-- Date range pickers with reset button -->
         <div class="date-filter">
           <a-date-picker 
             v-model:value="startDate" 
@@ -12,6 +18,7 @@
             showTime
             :disabledDate="disabledStartDate"
             style="margin-right: 8px;"
+            @change="handleDateChange"
           />
           <a-date-picker 
             v-model:value="endDate" 
@@ -19,10 +26,11 @@
             showTime
             :disabledDate="disabledEndDate"
             style="margin-right: 8px;"
+            @change="handleDateChange"
           />
-          <a-button type="primary" @click="refreshData" :loading="isLoading">
-            <template #icon><RedoOutlined /></template>
-            Apply Filters
+          <a-button type="primary" @click="resetFilters" :loading="isLoading">
+            <template #icon><UndoOutlined /></template>
+            Reset
           </a-button>
         </div>
 
@@ -64,7 +72,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { RedoOutlined } from '@ant-design/icons-vue'
+import { UndoOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
 import HiHello from "@/components/HiHello.vue"
 import SshTable from '@/components/SshTable.vue'
 import FailedSsh from '@/components/FailedSsh.vue'
@@ -85,9 +93,14 @@ const endDate = ref(null)
 const isLoading = ref(false)
 const refreshTrigger = ref(0) // Used to trigger refreshes in child components
 
+// Computed property to check if using default time range (60m)
+const isDefaultTimeRange = computed(() => {
+  return !startDate.value && !endDate.value
+})
+
 // Computed property for timeRange parameter
 const timeRange = computed(() => {
-  if (!startDate.value && !endDate.value) {
+  if (isDefaultTimeRange.value) {
     return '60m' // Default to 60 minutes if no dates are selected
   }
   
@@ -133,6 +146,29 @@ function disabledEndDate(current) {
   return false
 }
 
+// Handler for date changes
+function handleDateChange() {
+  // Refresh data when dates change
+  refreshData()
+}
+
+// Function to reset filters
+function resetFilters() {
+  isLoading.value = true
+  
+  // Reset date filters to null
+  startDate.value = null
+  endDate.value = null
+  
+  // Refresh data
+  refreshTrigger.value++
+  
+  // Simulate loading for a short period
+  setTimeout(() => {
+    isLoading.value = false
+  }, 500)
+}
+
 // Function to refresh all components
 function refreshData() {
   isLoading.value = true
@@ -159,6 +195,24 @@ function refreshData() {
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 15px;
+}
+
+/* Time range indicator styling */
+.time-range-indicator {
+  background-color: #f0f8ff;
+  border-radius: 4px;
+  padding: 8px 16px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #008fca;
+  border: 1px solid #d9e8f3;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.time-range-indicator span {
+  margin-left: 8px;
 }
 
 /* Date filter styling */
