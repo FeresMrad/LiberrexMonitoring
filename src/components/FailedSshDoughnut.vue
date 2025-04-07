@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineProps, computed } from 'vue'
+import { ref, onMounted, defineProps, computed, watch } from 'vue'
 import { Doughnut } from 'vue-chartjs'
 import { Chart, ArcElement, Tooltip, Legend } from 'chart.js'
 import api from '@/services/api'
@@ -36,7 +36,15 @@ import api from '@/services/api'
 Chart.register(ArcElement, Tooltip, Legend)
 
 const props = defineProps({
-  host: String
+  host: String,
+  timeRange: {
+    type: [String, Object],
+    default: '60m'
+  },
+  refreshTrigger: {
+    type: Number,
+    default: 0
+  }
 })
 
 const loading = ref(true)
@@ -53,7 +61,8 @@ const fetchFailedSSHData = async () => {
   userColors.value = {}
   
   try {
-    const response = await api.getSshFailedUsers(props.host)
+    // Use the API method which now supports timeRange
+    const response = await api.getSshFailedUsers(props.host, props.timeRange)
     
     // Update user counts from API response
     userCounts.value = response.data.counts
@@ -70,9 +79,11 @@ const fetchFailedSSHData = async () => {
   }
 }
 
-// Fetch data when the component mounts and when the host changes
+// Fetch data when the component mounts and when props change
 onMounted(fetchFailedSSHData)
-//watch(() => props.host, fetchFailedSSHData)
+
+// Watch for changes in timeRange or refreshTrigger
+watch([() => props.timeRange, () => props.refreshTrigger], fetchFailedSSHData)
 
 // Sort users by the number of attempts
 const sortedUserCounts = computed(() => {
@@ -149,7 +160,7 @@ h3 {
   max-width: 250px; /* Prevent it from stretching too much */
   text-align: left;
   overflow-y: auto;
-  max-height: 250px; /* 👈 Adjust based on design */
+  max-height: 250px; /* Adjust based on design */
 }
 
 .custom-legend table {

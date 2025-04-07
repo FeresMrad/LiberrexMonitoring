@@ -8,11 +8,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineProps } from 'vue'
+import { ref, onMounted, watch, defineProps } from 'vue'
 import api from '@/services/api'
 
 const props = defineProps({
-  host: String
+  host: String,
+  timeRange: {
+    type: [String, Object],
+    default: '60m'
+  },
+  refreshTrigger: {
+    type: Number,
+    default: 0
+  }
 })
 
 const failedCount = ref(0)
@@ -25,7 +33,8 @@ const fetchFailedSSH = async () => {
   failedCount.value = 0
 
   try {
-    const response = await api.getSshFailedCount(props.host)
+    // Use the API method which now supports timeRange
+    const response = await api.getSshFailedCount(props.host, props.timeRange)
     failedCount.value = response.data.count
   } catch (err) {
     error.value = err.message
@@ -34,9 +43,11 @@ const fetchFailedSSH = async () => {
   }
 }
 
-// Fetch data on mount and when `host` changes
+// Fetch data on mount and when props change
 onMounted(fetchFailedSSH)
-//watch(() => props.host, fetchFailedSSH)
+
+// Watch for changes in timeRange or refreshTrigger
+watch([() => props.timeRange, () => props.refreshTrigger], fetchFailedSSH)
 </script>
 
 <style scoped>

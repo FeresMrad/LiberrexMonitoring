@@ -14,6 +14,20 @@ const apiClient = axios.create({
   }
 });
 
+// Helper function to format time range parameters
+const formatTimeRangeParams = (params, timeRange) => {
+  // If timeRange is an object with start/end
+  if (timeRange && typeof timeRange === 'object') {
+    if (timeRange.start) params.start = timeRange.start;
+    if (timeRange.end) params.end = timeRange.end;
+  } 
+  // If timeRange is a string (e.g., '60m')
+  else if (timeRange) {
+    params.timeRange = timeRange;
+  }
+  return params;
+};
+
 // API methods
 export default {
   // Host methods
@@ -24,25 +38,25 @@ export default {
   // Metrics methods
   getCpuMetrics(host, timeRange = null) {
     let params = { host };
-    if (timeRange) params.timeRange = timeRange;
+    params = formatTimeRangeParams(params, timeRange);
     return apiClient.get('/metrics/cpu', { params });
   },
   
   getMemoryMetrics(host, timeRange = null) {
     let params = { host };
-    if (timeRange) params.timeRange = timeRange;
+    params = formatTimeRangeParams(params, timeRange);
     return apiClient.get('/metrics/memory', { params });
   },
   
   getDiskMetrics(host, timeRange = null) {
     let params = { host };
-    if (timeRange) params.timeRange = timeRange;
+    params = formatTimeRangeParams(params, timeRange);
     return apiClient.get('/metrics/disk', { params });
   },
   
   getNetworkMetrics(host, timeRange = null) {
     let params = { host };
-    if (timeRange) params.timeRange = timeRange;
+    params = formatTimeRangeParams(params, timeRange);
     return apiClient.get('/metrics/network', { params });
   },
   
@@ -59,24 +73,34 @@ export default {
   },
   
   // SSH methods
-  getSshFailedCount(host) {
-    return apiClient.get('/ssh/failed', { params: { host } });
+  getSshFailedCount(host, timeRange = null) {
+    let params = { host };
+    params = formatTimeRangeParams(params, timeRange);
+    return apiClient.get('/ssh/failed', { params });
   },
   
-  getSshFailedUniqueCount(host) {
-    return apiClient.get('/ssh/failed/unique', { params: { host } });
+  getSshFailedUniqueCount(host, timeRange = null) {
+    let params = { host };
+    params = formatTimeRangeParams(params, timeRange);
+    return apiClient.get('/ssh/failed/unique', { params });
   },
   
-  getSshFailedIps(host) {
-    return apiClient.get('/ssh/failed/ips', { params: { host } });
+  getSshFailedIps(host, timeRange = null) {
+    let params = { host };
+    params = formatTimeRangeParams(params, timeRange);
+    return apiClient.get('/ssh/failed/ips', { params });
   },
   
-  getSshFailedUsers(host) {
-    return apiClient.get('/ssh/failed/users', { params: { host } });
+  getSshFailedUsers(host, timeRange = null) {
+    let params = { host };
+    params = formatTimeRangeParams(params, timeRange);
+    return apiClient.get('/ssh/failed/users', { params });
   },
   
-  getSshLogs(host) {
-    return apiClient.get('/ssh/logs', { params: { host } });
+  getSshLogs(host, timeRange = null) {
+    let params = { host };
+    params = formatTimeRangeParams(params, timeRange);
+    return apiClient.get('/ssh/logs', { params });
   },
   
   // Uptime

@@ -71,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, defineProps } from 'vue';
+import { ref, computed, onMounted, defineProps, watch } from 'vue';
 import { SearchOutlined } from '@ant-design/icons-vue';
 import api from '@/services/api';
 
@@ -80,6 +80,14 @@ const props = defineProps({
   host: {
     type: String,
     required: true
+  },
+  timeRange: {
+    type: [String, Object],
+    default: '60m'
+  },
+  refreshTrigger: {
+    type: Number,
+    default: 0
   }
 });
 
@@ -128,8 +136,8 @@ const filteredLogs = computed(() => {
 async function fetchLogs() {
   try {
     isLoading.value = true;
-
-    const response = await api.getSshLogs(props.host);
+    // Use the API method which now supports timeRange
+    const response = await api.getSshLogs(props.host, props.timeRange);
     logs.value = response.data;
   } catch (error) {
     console.error("Error fetching logs:", error);
@@ -176,8 +184,11 @@ function formatTimestamp(timestamp) {
   return date.toLocaleString("en-GB");
 }
 
-// Fetch logs on component mount
+// Fetch logs on component mount and when props change
 onMounted(fetchLogs);
+
+// Watch for changes in timeRange or refreshTrigger
+watch([() => props.timeRange, () => props.refreshTrigger], fetchLogs);
 </script>
 
 <style scoped>
