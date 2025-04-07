@@ -128,4 +128,10 @@ thead, tbody tr {
   width: 100%;
   table-layout: fixed;
 }
+
+h3 {
+    margin: 0;
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
 </style>

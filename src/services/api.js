@@ -111,5 +111,12 @@ export default {
   // SSH sessions - active connections
 getSshSessions(host) {
   return apiClient.get('/ssh/sessions', { params: { host } });
-}
+},
+
+
+getSshAcceptedUsers(host, timeRange = null) {
+  let params = { host };
+  params = formatTimeRangeParams(params, timeRange);
+  return apiClient.get('/ssh/accepted/users', { params });
+},
 };

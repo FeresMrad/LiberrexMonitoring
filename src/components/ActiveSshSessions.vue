@@ -1,6 +1,6 @@
 <template>
     <div class="active-ssh-sessions">
-      <h3>Active Connections</h3>
+      <h3>Active Connections - Unique Session</h3>
       <div v-if="loading" class="loading">Loading...</div>
       <div v-else-if="error" class="error">Error: {{ error }}</div>
       <div v-else>
@@ -74,10 +74,10 @@
     
   <style scoped>
   .active-ssh-sessions {
-    padding: 10px;
     text-align: center;
-    max-width: 500px;
-    margin-top: -5px;
+  padding: 10px;
+  max-width: 500px;
+  margin-top: -5px;
   }
   
   h3 {
@@ -89,41 +89,42 @@
   /* Table layout */
   table {
     width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-    margin-top: 5px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin-top: 5px;
   }
   
   /* Sticky header */
   thead {
     background-color: #008fca;
-    color: white;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+
   }
   
   th, td {
     padding: 8px;
     border-bottom: 1px solid #ccc;
-    font-size: 12px;
+    font-size: 13px;
     text-align: left;
   }
   
   /* Make only the tbody scrollable */
   tbody {
     display: block;
-    max-height: 220px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
   }
   
   /* Ensure rows align with header */
   thead, tbody tr {
     display: table;
-    width: 100%;
-    table-layout: fixed;
+  width: 100%;
+  table-layout: fixed;
   }
   
   .no-sessions {
