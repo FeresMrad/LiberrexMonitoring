@@ -44,7 +44,7 @@
                 <FailedSshDoughnut :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
               </div>
               <div class ="chart-box">
-                <FailedSshIpTable :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
+                <ActiveSshSessions :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
               </div>
               <div class ="chart-box">
                 <FailedSshIpTable :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
@@ -71,6 +71,7 @@
   import UniqueFailedSsh from '@/components/UniqueFailedSsh.vue'
   import FailedSshDoughnut from '@/components/FailedSshDoughnut.vue'
   import FailedSshIpTable from '@/components/FailedSshIpTable.vue'
+import ActiveSshSessions from '@/components/ActiveSshSessions.vue'
   
   // Define the host for usage within the component
   const route = useRoute()

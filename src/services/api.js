@@ -106,5 +106,10 @@ export default {
   // Uptime
   getUptime(host) {
     return apiClient.get('/uptime', { params: { host } });
-  }
+  },
+
+  // SSH sessions - active connections
+getSshSessions(host) {
+  return apiClient.get('/ssh/sessions', { params: { host } });
+}
 };
