@@ -3,8 +3,7 @@ import { io } from 'socket.io-client';
 import { ref } from 'vue';
 
 // WebSocket configuration
-//const SOCKET_URL = process.env.VUE_APP_SOCKET_URL || 'http://82.165.230.7:5001';
-const SOCKET_URL = 'http://82.165.230.7:5001';
+const SOCKET_URL = process.env.VUE_APP_SOCKET_URL || '/socket.io';
 
 // Create a reactive reference to track connection status
 const isConnected = ref(false);

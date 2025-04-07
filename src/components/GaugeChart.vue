@@ -7,8 +7,8 @@
   
   <script setup>
   import { ref, onMounted, onUnmounted, defineProps } from 'vue'
-  import axios from 'axios'
-  import { io } from 'socket.io-client'
+  import api from '@/services/api'
+  import websocket from '@/services/websocket'
   
   const props = defineProps({
     host: {
@@ -34,41 +34,55 @@
     return "#ff4d4f"
   }
   
-  // Fetch the gauge value from InfluxDB
+  // Fetch the gauge value from the metrics API
   const fetchGauge = async () => {
     try {
-      const response = await axios.get("http://82.165.230.7:8086/query", {
-        params: {
-          db: "metrics",
-          q: `SELECT "percent" FROM "${props.measurement}" WHERE "host" = '${props.host}' ORDER BY time DESC LIMIT 1`,
-          u: "liberrex",
-          p: "test",
-        },
-      })
-      const values = response.data.results[0]?.series[0]?.values || []
-      if (values.length > 0) {
-        gaugeValue.value = values[0][1]
+      // Dynamically select the right API method based on measurement
+      let fetchMethod;
+      switch(props.measurement) {
+        case 'cpu':
+          fetchMethod = api.getCpuMetrics;
+          break;
+        case 'memory':
+          fetchMethod = api.getMemoryMetrics;
+          break;
+        case 'disk':
+          fetchMethod = api.getDiskMetrics;
+          break;
+        default:
+          throw new Error(`Unsupported measurement: ${props.measurement}`);
+      }
+      
+      const response = await fetchMethod(props.host, '1m');
+      if (response.data && response.data.length > 0) {
+        gaugeValue.value = response.data[0].percent;
       }
     } catch (error) {
       console.error(`Error fetching ${props.measurement} gauge:`, error)
     }
   }
   
-  // Set up socket.io to listen for new data
-  const socket = io("http://82.165.230.7:5000")
-  const handleNewData = (data) => {
+  // Handler for WebSocket metric updates
+  const handleMetricUpdate = (data) => {
     if (data.host === props.host && data.measurement === props.measurement) {
-      gaugeValue.value = data.fields.percent
+      gaugeValue.value = data.fields.percent;
     }
   }
   
   onMounted(() => {
+    // Initial gauge fetch
     fetchGauge()
-    socket.on("new_data", handleNewData)
+    
+    // Connect and subscribe to WebSocket
+    websocket.connect()
+    websocket.subscribeToHost(props.host)
+    websocket.addEventListener('metric_update', handleMetricUpdate)
   })
   
   onUnmounted(() => {
-    socket.off("new_data", handleNewData)
+    // Cleanup WebSocket listeners and subscriptions
+    websocket.removeEventListener('metric_update', handleMetricUpdate)
+    websocket.unsubscribeFromHost(props.host)
   })
   </script>
   
@@ -89,4 +103,3 @@
     font-weight: bold;
   }
   </style>
-  
