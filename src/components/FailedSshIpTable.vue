@@ -13,10 +13,9 @@
         </thead>
         <tbody>
           <tr v-for="([ip, count]) in sortedIpCounts" :key="ip">
-  <td>{{ ip }}</td>
-  <td>{{ count }}</td>
-</tr>
-
+            <td>{{ ip }}</td>
+            <td>{{ count }}</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -24,7 +23,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, defineProps, computed } from 'vue'
+import { ref, onMounted, defineProps } from 'vue'
+import api from '@/services/api'
 
 const props = defineProps({
   host: {
@@ -35,40 +35,15 @@ const props = defineProps({
 
 const loading = ref(true)
 const error = ref(null)
-const ipCounts = ref({})
-
-// Sort ipCounts into array [ip, count] descending by count
-const sortedIpCounts = computed(() => {
-  return Object.entries(ipCounts.value).sort((a, b) => b[1] - a[1])
-})
+const sortedIpCounts = ref([])
 
 const fetchFailedSSHData = async () => {
   loading.value = true
   error.value = null
-  ipCounts.value = {}
 
   try {
-    const response = await fetch(
-      `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=60m`
-    )
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`)
-    }
-
-    const text = await response.text()
-    const lines = text.trim().split('\n')
-
-    const ipRegex = /from\s+(\d{1,3}(?:\.\d{1,3}){3})/i
-
-    lines.forEach(line => {
-      const match = ipRegex.exec(line)
-      if (match && match[1]) {
-        const ip = match[1]
-        ipCounts.value[ip] = (ipCounts.value[ip] || 0) + 1
-      }
-    })
-
+    const response = await api.getSshFailedIps(props.host)
+    sortedIpCounts.value = response.data
   } catch (err) {
     error.value = err.message
   } finally {
@@ -77,7 +52,7 @@ const fetchFailedSSHData = async () => {
 }
 
 onMounted(fetchFailedSSHData)
-watch(() => props.host, fetchFailedSSHData)
+//watch(() => props.host, fetchFailedSSHData)
 
 </script>
 
@@ -111,7 +86,6 @@ th, td {
   border-bottom: 1px solid #ccc;
   border-left: 1px solid #ccc;
   border-right: 1px solid #ccc;
-
 }
 
 /* Column-specific styling */
@@ -143,5 +117,4 @@ thead, tbody tr {
   width: 100%;
   table-layout: fixed;
 }
-
 </style>

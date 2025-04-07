@@ -27,9 +27,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, defineProps, computed } from 'vue'
+import { ref, onMounted, defineProps, computed } from 'vue'
 import { Doughnut } from 'vue-chartjs'
 import { Chart, ArcElement, Tooltip, Legend } from 'chart.js'
+import api from '@/services/api'
 
 // Register necessary Chart.js components
 Chart.register(ArcElement, Tooltip, Legend)
@@ -42,39 +43,26 @@ const loading = ref(true)
 const error = ref(null)
 const userCounts = ref({})
 const userColors = ref({})
+const totalAttempts = ref(0)
 
-// Function to fetch NDJSON logs and count failed SSH logins by user
+// Function to fetch failed SSH login data by user
 const fetchFailedSSHData = async () => {
   loading.value = true
   error.value = null
   userCounts.value = {}
   userColors.value = {}
+  
   try {
-    const response = await fetch(
-      `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}+app_name:sshd+Failed+password&start=60m`
-    )
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
+    const response = await api.getSshFailedUsers(props.host)
     
-    const text = await response.text()
-    const lines = text.trim().split("\n")
+    // Update user counts from API response
+    userCounts.value = response.data.counts
     
-    // Regular expression to extract the username.
-    // Handles both:
-    // "Failed password for invalid user student from ..." and "Failed password for student from ..."
-    const userRegex = /Failed password for (?:invalid user )?(\S+)\s+from/i
-    lines.forEach(line => {
-      const match = userRegex.exec(line)
-      if (match && match[1]) {
-        userCounts.value[match[1]] = (userCounts.value[match[1]] || 0) + 1
-      }
-    })
+    // Update user colors from API response
+    userColors.value = response.data.colors
     
-    // Generate a unique color for each user
-    const users = Object.keys(userCounts.value)
-    users.forEach((user, i) => {
-      userColors.value[user] = `hsl(${(i * 360 / users.length)}, 90%, 70%)` //change chart colors here
-    })
-    
+    // Update total attempts
+    totalAttempts.value = response.data.total
   } catch (err) {
     error.value = err.message
   } finally {
@@ -84,12 +72,7 @@ const fetchFailedSSHData = async () => {
 
 // Fetch data when the component mounts and when the host changes
 onMounted(fetchFailedSSHData)
-watch(() => props.host, fetchFailedSSHData)
-
-// Compute total attempts
-const totalAttempts = computed(() => {
-  return Object.values(userCounts.value).reduce((sum, count) => sum + count, 0)
-})
+//watch(() => props.host, fetchFailedSSHData)
 
 // Sort users by the number of attempts
 const sortedUserCounts = computed(() => {

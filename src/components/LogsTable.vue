@@ -105,8 +105,8 @@
 
 <script setup>
 import { ref, computed, onMounted, defineProps } from 'vue';
-import axios from 'axios';
 import { SearchOutlined, RedoOutlined } from '@ant-design/icons-vue';
+import api from '@/services/api';
 
 // Define props for host specification
 const props = defineProps({
@@ -124,7 +124,6 @@ const searchInput = ref(null);
 const isLoading = ref(false);
 const startDate = ref(null);
 const endDate = ref(null);
-
 
 // Log columns definition
 const logColumns = [
@@ -155,7 +154,7 @@ const logColumns = [
     title: 'Log Message', 
     dataIndex: '_msg', 
     key: 'message', 
-    customFilterDropdown: true // ✅ Enable custom filtering
+    customFilterDropdown: true 
   }
 ];
 
@@ -170,7 +169,7 @@ const filteredLogs = computed(() => {
     );
   }
 
-  // ✅ Filter by log message
+  // Filter by log message
   if (searchText.value && searchedColumn.value === '_msg') {
     logsToDisplay = logsToDisplay.filter(log =>
       log._msg.toLowerCase().includes(searchText.value.toLowerCase())
@@ -184,10 +183,9 @@ const filteredLogs = computed(() => {
   });
 });
 
-
 // Methods
 function disabledStartDate(current) {
-  const now = new Date(); // Assuming you're using dayjs
+  const now = new Date();
 
   // Disable all future dates after today
   if (current && current.isAfter(now, 'day')) {
@@ -213,47 +211,28 @@ function disabledEndDate(current) {
 async function fetchLogs() {
   try {
     isLoading.value = true;
-
-    let url = `http://82.165.230.7:9428/select/logsql/query?query=hostname:${props.host}`;
-
+    
+    // Format the dates for the API request if they exist
+    let start = null;
+    let end = null;
+    
     if (startDate.value) {
-      const startISO = new Date(startDate.value).toISOString();
-      url += `&start=${startISO}`;
+      start = new Date(startDate.value).toISOString();
     }
-
+    
     if (endDate.value) {
-      const endISO = new Date(endDate.value).toISOString();
-      url += `&end=${endISO}`;
+      end = new Date(endDate.value).toISOString();
     }
-
-    if (!startDate.value && !endDate.value) {
-      url += `&start=5m`; // Default to last 5 minutes
+    
+    // If no dates are selected, fetch the last 5 minutes by default
+    if (!start && !end) {
+      start = '5m';
     }
-
-    const response = await axios.get(url, {
-      transformResponse: [
-        (data) => {
-          if (!data || data.trim() === "") {
-            return []; // Return an empty array instead of parsing
-          }
-          return data
-            .trim()
-            .split("\n")
-            .map(line => {
-              try {
-                return JSON.parse(line);
-              } catch (error) {
-                console.error("Error parsing log entry:", line);
-                return null; // Skip invalid JSON lines
-              }
-            })
-            .filter(log => log !== null); // Remove any null values
-        }
-      ]
-    });
-
-    console.log("API Response:", response.data);
+    
+    // Call the API
+    const response = await api.getLogs(props.host, start, end);
     logs.value = response.data;
+    
   } catch (error) {
     console.error("Error fetching logs:", error);
     logs.value = []; // Ensure logs are set to an empty array on error
@@ -261,9 +240,6 @@ async function fetchLogs() {
     isLoading.value = false;
   }
 }
-
-
-
 
 function handleSearch(selectedKeys, confirm, dataIndex) {
   confirm();

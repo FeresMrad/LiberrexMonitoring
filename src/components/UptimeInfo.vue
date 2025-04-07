@@ -11,7 +11,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, defineProps } from "vue";
-import axios from "axios";
+import api from '@/services/api';
 
 const props = defineProps({
   host: String, // Receive the host as a prop
@@ -24,70 +24,86 @@ const uptimeInfo = ref({
   lastUptimeTimestamp: null,
 });
 
-// Format uptime in dd:hh:mm:ss
-const formatUptime = (seconds) => {
-  seconds = Math.floor(seconds);
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return `${days}d ${hours}h ${minutes}m ${secs}s`;
-};
-
 let uptimeInterval = null;
+const localUptimeCounter = ref(null);
 
 // Fetch uptime and update uptimeInfo
 const fetchUptime = async () => {
   try {
-    const response = await axios.get("http://82.165.230.7:8086/query", {
-      params: {
-        db: "metrics",
-        q: `SELECT "uptime_seconds" FROM "uptime" WHERE "host" = '${props.host}' ORDER BY time DESC LIMIT 1`,
-        u: "liberrex",
-        p: "test",
-      },
-    });
-
-    const values = response.data.results[0]?.series[0]?.values || [];
-    if (values.length > 0) {
-      const lastUptimeTimestampStr = values[0][0]; // Latest uptime record timestamp
-      const uptimeSeconds = values[0][1]; // Recorded uptime in seconds at that moment
-      const lastUptimeTimestamp = new Date(lastUptimeTimestampStr);
-      const currentTime = new Date();
-      const diffSeconds = (currentTime.getTime() - lastUptimeTimestamp.getTime()) / 1000;
-
-      if (diffSeconds > 60) {
-        uptimeInfo.value = {
-          isDown: true,
-          displayText: lastUptimeTimestamp.toLocaleString("en-GB"),
-          lastUptimeTimestamp,
-        };
-      } else {
-        const currentUptime = uptimeSeconds + diffSeconds;
-        uptimeInfo.value = {
-          isDown: false,
-          displayText: formatUptime(currentUptime),
-          lastUptimeTimestamp,
-        };
-      }
+    const response = await api.getUptime(props.host);
+    
+    // Update the uptime info with the API response
+    uptimeInfo.value = response.data;
+    
+    // If the host is up, start a local counter
+    if (!uptimeInfo.value.isDown) {
+      startLocalCounter(uptimeInfo.value.displayText);
     } else {
-      uptimeInfo.value = { isDown: true, displayText: "Unknown", lastUptimeTimestamp: null };
+      stopLocalCounter();
     }
   } catch (error) {
     console.error("Error fetching uptime:", error);
     uptimeInfo.value = { isDown: true, displayText: "Error", lastUptimeTimestamp: null };
+    stopLocalCounter();
   }
 };
 
+// Start a local counter that updates the uptime display
+const startLocalCounter = (initialUptime) => {
+  // Parse the initial uptime from format "Xd Yh Zm Ns"
+  const matches = initialUptime.match(/(\d+)d\s+(\d+)h\s+(\d+)m\s+(\d+)s/);
+  if (!matches) return;
+  
+  const days = parseInt(matches[1]);
+  const hours = parseInt(matches[2]);
+  const minutes = parseInt(matches[3]);
+  const seconds = parseInt(matches[4]);
+  
+  // Calculate total seconds
+  let totalSeconds = days * 86400 + hours * 3600 + minutes * 60 + seconds;
+  
+  // Clear any existing interval
+  stopLocalCounter();
+  
+  // Create a new interval that increments the counter every second
+  localUptimeCounter.value = setInterval(() => {
+    totalSeconds++;
+    
+    // Update the display
+    const d = Math.floor(totalSeconds / 86400);
+    const h = Math.floor((totalSeconds % 86400) / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    
+    uptimeInfo.value.displayText = `${d}d ${h}h ${m}m ${s}s`;
+  }, 1000);
+};
+
+const stopLocalCounter = () => {
+  if (localUptimeCounter.value) {
+    clearInterval(localUptimeCounter.value);
+    localUptimeCounter.value = null;
+  }
+};
+
+// Handler for host changes
+const handleHostChange = () => {
+  stopLocalCounter();
+  fetchUptime();
+};
+
 // Watch for host changes and refetch uptime
-watch(() => props.host, fetchUptime, { immediate: true });
+watch(() => props.host, handleHostChange, { immediate: true });
 
 onMounted(() => {
-  uptimeInterval = setInterval(fetchUptime, 1000);
+  // Initial fetch and then reduced polling frequency (every 30 seconds)
+  // This is just to check if the system is still up
+  uptimeInterval = setInterval(fetchUptime, 30000);
 });
 
 onUnmounted(() => {
   if (uptimeInterval) clearInterval(uptimeInterval);
+  stopLocalCounter();
 });
 </script>
 
