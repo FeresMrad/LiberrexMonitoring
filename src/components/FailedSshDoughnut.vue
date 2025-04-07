@@ -11,7 +11,7 @@
             <!-- Sort the users by their failed login count -->
             <tr v-for="(count, user) in sortedUserCounts" :key="user">
               <td class="legend-color-cell">
-                <span class="legend-color" :style="{ backgroundColor: userColors[user] }"></span>
+                <span class="legend-color" :style="{ backgroundColor: getUserColor(user) }"></span>
               </td>
               <td class="legend-user">{{ user }}</td>
               <td class="legend-count">{{ count }}</td>
@@ -50,28 +50,53 @@ const props = defineProps({
 const loading = ref(true)
 const error = ref(null)
 const userCounts = ref({})
-const userColors = ref({})
 const totalAttempts = ref(0)
+const userColorCache = ref({}) // Cache for generated colors
+
+// Function to generate a color for a user based on their name
+const getUserColor = (username) => {
+  // If we've already generated a color for this user, return it from cache
+  if (userColorCache.value[username]) {
+    return userColorCache.value[username]
+  }
+  
+  // Otherwise, create a new color based on the username
+  // Simple hash function to get a number from a string
+  let hash = 0
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  
+  // Convert the hash to a hue (0-360)
+  const hue = hash % 360
+  const color = `hsl(${hue}, 90%, 70%)`
+  
+  // Save the color to cache for future use
+  userColorCache.value[username] = color
+  
+  return color
+}
 
 // Function to fetch failed SSH login data by user
 const fetchFailedSSHData = async () => {
   loading.value = true
   error.value = null
   userCounts.value = {}
-  userColors.value = {}
   
   try {
-    // Use the API method which now supports timeRange
+    // Modified API call - now we expect only counts, not colors
     const response = await api.getSshFailedUsers(props.host, props.timeRange)
     
     // Update user counts from API response
-    userCounts.value = response.data.counts
-    
-    // Update user colors from API response
-    userColors.value = response.data.colors
+    userCounts.value = response.data.counts || {}
     
     // Update total attempts
-    totalAttempts.value = response.data.total
+    totalAttempts.value = response.data.total || 0
+    
+    // For each user, ensure they have a color
+    Object.keys(userCounts.value).forEach(user => {
+      getUserColor(user)
+    })
   } catch (err) {
     error.value = err.message
   } finally {
@@ -106,7 +131,7 @@ const chartData = computed(() => {
       {
         label: 'Failed SSH Logins by User',
         data,
-        backgroundColor: labels.map(user => userColors.value[user])
+        backgroundColor: labels.map(user => getUserColor(user))
       }
     ]
   }
