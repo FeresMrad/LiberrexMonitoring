@@ -1,11 +1,27 @@
+// module.exports = {
+//   devServer: {
+//     proxy: {
+//       '/api': {
+//         target: 'http://82.165.230.7:9428',
+//         changeOrigin: true,
+//         pathRewrite: { '^/api': '' },
+//       },
+//     },
+//   },
+// };
+
 module.exports = {
   devServer: {
     proxy: {
       '/api': {
-        target: 'http://82.165.230.7:9428',
+        target: 'http://82.165.230.7:5000',  // Your Flask backend
         changeOrigin: true,
-        pathRewrite: { '^/api': '' },
       },
+      '/socket.io': {
+        target: 'http://82.165.230.7:5001',  // Your WebSocket server
+        changeOrigin: true,
+        ws: true,  // Enable WebSocket proxy
+      }
     },
   },
 };
