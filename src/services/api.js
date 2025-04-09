@@ -119,4 +119,18 @@ getSshAcceptedUsers(host, timeRange = null) {
   params = formatTimeRangeParams(params, timeRange);
   return apiClient.get('/ssh/accepted/users', { params });
 },
+
+// New methods to get only the latest metric value
+getLatestCpuMetric(host) {
+  return apiClient.get('/metrics/cpu', { params: { host, latest: true } });
+},
+
+getLatestMemoryMetric(host) {
+  return apiClient.get('/metrics/memory', { params: { host, latest: true } });
+},
+
+getLatestDiskMetric(host) {
+  return apiClient.get('/metrics/disk', { params: { host, latest: true } });
+},
+
 };

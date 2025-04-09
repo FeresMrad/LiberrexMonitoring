@@ -35,32 +35,34 @@
   }
   
   // Fetch the gauge value from the metrics API
-  const fetchGauge = async () => {
-    try {
-      // Dynamically select the right API method based on measurement
-      let fetchMethod;
-      switch(props.measurement) {
-        case 'cpu':
-          fetchMethod = api.getCpuMetrics;
-          break;
-        case 'memory':
-          fetchMethod = api.getMemoryMetrics;
-          break;
-        case 'disk':
-          fetchMethod = api.getDiskMetrics;
-          break;
-        default:
-          throw new Error(`Unsupported measurement: ${props.measurement}`);
-      }
-      
-      const response = await fetchMethod(props.host);
-      if (response.data && response.data.length > 0) {
-        gaugeValue.value = response.data[0].percent;
-      }
-    } catch (error) {
-      console.error(`Error fetching ${props.measurement} gauge:`, error)
+  // Fetch the gauge value from the metrics API
+const fetchGauge = async () => {
+  try {
+    // Dynamically select the right API method based on measurement
+    let fetchMethod;
+    switch(props.measurement) {
+      case 'cpu':
+        fetchMethod = api.getLatestCpuMetric;
+        break;
+      case 'memory':
+        fetchMethod = api.getLatestMemoryMetric;
+        break;
+      case 'disk':
+        fetchMethod = api.getLatestDiskMetric;
+        break;
+      default:
+        throw new Error(`Unsupported measurement: ${props.measurement}`);
     }
+    
+    const response = await fetchMethod(props.host);
+    
+    if (response.data && response.data.percent !== undefined) {
+      gaugeValue.value = response.data.percent;
+    }
+  } catch (error) {
+    console.error(`Error fetching ${props.measurement} gauge:`, error)
   }
+}
   
   // Handler for WebSocket metric updates
   const handleMetricUpdate = (data) => {
