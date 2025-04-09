@@ -69,7 +69,7 @@
     
     // Convert the hash to a hue (0-360)
     const hue = hash % 360
-    const color = `hsl(${hue}, 90%, 70%)`
+    const color = `hsl(${hue}, 90%, 65%)`
     
     // Save the color to cache for future use
     userColorCache.value[username] = color
