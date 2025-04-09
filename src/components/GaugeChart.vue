@@ -53,7 +53,7 @@
           throw new Error(`Unsupported measurement: ${props.measurement}`);
       }
       
-      const response = await fetchMethod(props.host, '1m');
+      const response = await fetchMethod(props.host);
       if (response.data && response.data.length > 0) {
         gaugeValue.value = response.data[0].percent;
       }
