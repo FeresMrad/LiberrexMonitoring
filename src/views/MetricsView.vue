@@ -24,7 +24,7 @@
             <MemPerChart :host="host" />
           </div>
           <div class="chart-item"> 
-            <NetworkioChart :host="host" />
+            <DiskPerChart :host="host" />
           </div>
           <div class="chart-item">
             <NetworkioChart :host="host" />
@@ -58,6 +58,7 @@ import DiskioChart from "@/components/DiskioChart.vue"
 import GaugeChart from "@/components/GaugeChart.vue"
 import LogsTable from "@/components/LogsTable.vue"
 import SpecsTable from '@/components/SpecsTable.vue'
+import DiskPerChart from '@/components/DiskPerChart.vue'
 
 // Define the host for usage within the component
 const route = useRoute()
