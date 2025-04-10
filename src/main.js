@@ -10,6 +10,7 @@ import EntitiesView from "./views/EntitiesView.vue";
 import TestView from "./views/TestView.vue";
 import SshDetailsView from "./views/SshDetailsView.vue";
 import LoginView from "./views/LoginView.vue";
+import NotFoundView from "./views/NotFoundView.vue"; // Import the new 404 page
 import authService from "./services/auth";
 
 // Authentication guard for protected routes
@@ -63,6 +64,12 @@ const routes = [
       return authService.isAuthenticated.value ? '/dashboard' : '/login';
     }
   },
+  // 404 route - must be the last route
+  { 
+    path: "/:pathMatch(.*)*", 
+    component: NotFoundView,
+    beforeEnter: requireAuth 
+  }
 ];
 
 const router = createRouter({
