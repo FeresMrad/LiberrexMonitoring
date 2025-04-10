@@ -4,7 +4,9 @@
     <div v-if="loading">Loading...</div>
     <div v-else-if="error">Error: {{ error }}</div>
     <div v-else class="chart-container">
-      <Doughnut :data="chartData" :options="chartOptions" />
+      <div class="chart-wrapper">
+        <Doughnut :data="chartData" :options="chartOptions" />
+      </div>
       <div class="custom-legend">
         <table>
           <tbody>
@@ -140,13 +142,14 @@ const chartData = computed(() => {
 // Chart options
 const chartOptions = {
   responsive: true,
-  maintainAspectRatio: false,
+  maintainAspectRatio: true,
+  cutout: '60%',
   plugins: {
     legend: {
       display: false 
     },
     tooltip: {
-      enabled: false
+      enabled: true
     }
   }
 }
@@ -156,6 +159,9 @@ const chartOptions = {
 .failed-ssh-doughnut {
   text-align: center;
   margin-top: 8px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 h3 {
@@ -168,24 +174,25 @@ h3 {
 .chart-container {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   width: 100%;
+  flex-grow: 1;
 }
 
-.chart-container > canvas {
-  flex-shrink: 0;
-  width: 350px !important;
-  height: 220px !important;
-  margin-left: -90px;
-  margin-right: -80px;
+.chart-wrapper {
+  flex: 0 0 auto;
+  width: 180px;
+  height: 180px;
+  position: relative;
 }
 
 .custom-legend {
   flex-grow: 1;
-  max-width: 250px; /* Prevent it from stretching too much */
+  max-width: 250px;
   text-align: left;
   overflow-y: auto;
-  max-height: 250px; /* Adjust based on design */
+  max-height: 220px;
+  margin-left: 10px;
 }
 
 .custom-legend table {

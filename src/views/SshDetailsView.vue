@@ -245,7 +245,7 @@ function refreshData() {
 .left-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-rows: repeat(2, minmax(280px, auto));
   gap: 20px;
   flex: 1;
 }
@@ -253,10 +253,12 @@ function refreshData() {
 /* Chart box styling */
 .chart-box {
   border: 1px solid #ccc;
-  padding: 5px;
+  padding: 12px;
   border-radius: 8px;
   background-color: #f9f9f9;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Right side: Table */
