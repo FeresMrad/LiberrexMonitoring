@@ -104,6 +104,8 @@ const host = ref(route.params.host)
   border-radius: 8px;
   background-color: #f9f9f9;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Prevent content from breaking out */
+  min-width: 0; /* Allows flex items to shrink below content size */
 }
 
 /* Empty cell styling */
