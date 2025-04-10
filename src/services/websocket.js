@@ -1,4 +1,3 @@
-// src/services/websocket.js
 import { io } from 'socket.io-client';
 import { ref } from 'vue';
 
@@ -13,6 +12,8 @@ const authError = ref(null);
 
 // Create socket instance
 let socket = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 3;
 
 // Track subscribed hosts
 const subscribedHosts = new Set();
@@ -38,7 +39,7 @@ const connect = () => {
     path: socket_path,
     transports: ['websocket', 'polling'], // Try WebSocket first, fall back to polling
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
     reconnectionDelay: 1000,
     timeout: 20000,
     auth: { token }, // Include token in auth object
@@ -50,6 +51,7 @@ const connect = () => {
     isConnected.value = true;
     isAuthenticated.value = true;
     authError.value = null;
+    reconnectAttempts = 0;
     
     // Re-subscribe to previously subscribed hosts
     subscribedHosts.forEach(host => {
@@ -68,7 +70,7 @@ const connect = () => {
     emitEvent('metric_update', data);
   });
 
-  // Add error handling
+  // Add error handling with retry logic
   socket.on('connect_error', (error) => {
     console.error('WebSocket connection error:', error);
     
@@ -76,6 +78,16 @@ const connect = () => {
     if (error.message && (error.message.includes('authentication') || error.message.includes('token'))) {
       authError.value = 'Authentication failed. Please log in again.';
       isAuthenticated.value = false;
+      // Don't attempt to reconnect on auth failures
+      socket.disconnect();
+      socket = null;
+    } else {
+      // For other errors, we can try to reconnect up to MAX_RECONNECT_ATTEMPTS
+      reconnectAttempts++;
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error(`Maximum reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Giving up.`);
+        disconnect();
+      }
     }
   });
 
@@ -88,15 +100,21 @@ const connect = () => {
 const disconnect = () => {
   if (!socket) return;
 
-  // Unsubscribe from all hosts
-  subscribedHosts.forEach(host => {
-    socket.emit('unsubscribe', { host });
-  });
-  subscribedHosts.clear();
+  try {
+    // Unsubscribe from all hosts
+    subscribedHosts.forEach(host => {
+      socket.emit('unsubscribe', { host });
+    });
+    subscribedHosts.clear();
 
-  socket.disconnect();
-  socket = null;
-  isConnected.value = false;
+    socket.disconnect();
+  } catch (error) {
+    console.error('Error during WebSocket disconnect:', error);
+  } finally {
+    socket = null;
+    isConnected.value = false;
+    reconnectAttempts = 0;
+  }
 };
 
 // Subscribe to a host for updates

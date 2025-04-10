@@ -1,3 +1,5 @@
+// 1. First, let's modify the auth.js file to handle token validation better:
+
 // src/services/auth.js
 import { ref } from 'vue';
 import api from './api';
@@ -19,8 +21,9 @@ const initAuth = () => {
       currentUser.value = JSON.parse(userJson);
       isAuthenticated.value = true;
       
-      // Optional: validate the token with the server
-      validateToken(token);
+      // We'll skip server validation on initial load to prevent CORS issues
+      // and assume the token is valid if it exists in localStorage
+      // The backend will validate the token on each API request
     } catch (error) {
       console.error('Error parsing stored user data', error);
       logout();
@@ -28,9 +31,11 @@ const initAuth = () => {
   }
 };
 
-// Validate token with the server
+// Validate token with the server - only call this explicitly when needed
 const validateToken = async (token) => {
   try {
+    // We'll keep this for when explicit validation is needed
+    // but we won't call it on every page load
     await api.validateToken(token);
     return true;
   } catch (error) {

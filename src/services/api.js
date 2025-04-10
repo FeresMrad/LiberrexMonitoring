@@ -1,4 +1,3 @@
-// src/services/api.js
 import axios from 'axios';
 
 // Base URL for the API
@@ -11,7 +10,9 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  }
+  },
+  // Set withCredentials to false for this case since we're using token auth
+  withCredentials: false
 });
 
 // Add a request interceptor to include auth token in requests
@@ -24,6 +25,25 @@ apiClient.interceptors.request.use(
     return config;
   },
   error => {
+    return Promise.reject(error);
+  }
+);
+
+// Add a response interceptor to handle authentication errors
+apiClient.interceptors.response.use(
+  response => response,
+  error => {
+    // If we get a 401 Unauthorized error, we might need to redirect to login
+    if (error.response && error.response.status === 401) {
+      // Clear localStorage and redirect to login
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      
+      // Check if we're not already on the login page to avoid redirect loops
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
     return Promise.reject(error);
   }
 );

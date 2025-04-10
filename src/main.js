@@ -1,4 +1,3 @@
-// main.js
 import { createApp } from "vue";
 import App from "./App.vue";
 import { createRouter, createWebHistory } from "vue-router";
@@ -12,12 +11,30 @@ import SshDetailsView from "./views/SshDetailsView.vue";
 import LoginView from "./views/LoginView.vue";
 import NotFoundView from "./views/NotFoundView.vue"; // Import the new 404 page
 import authService from "./services/auth";
+import websocket from "./services/websocket";
 
 // Authentication guard for protected routes
 const requireAuth = (to, from, next) => {
-  if (!authService.isAuthenticated.value) {
-    // Redirect to login if not authenticated
+  // Check for auth token in localStorage directly for simplicity
+  const token = localStorage.getItem('auth_token');
+  const userJson = localStorage.getItem('auth_user');
+  
+  if (!token || !userJson) {
+    // No token or user data, redirect to login
     return next('/login');
+  }
+  
+  // Make sure authentication state is updated
+  if (!authService.isAuthenticated.value) {
+    try {
+      // Initialize auth state from localStorage
+      const userData = JSON.parse(userJson);
+      authService.currentUser.value = userData;
+      authService.isAuthenticated.value = true;
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return next('/login');
+    }
   }
   
   // If the route requires a specific host, check permissions
@@ -61,7 +78,7 @@ const routes = [
   { 
     path: "/", 
     redirect: () => {
-      return authService.isAuthenticated.value ? '/dashboard' : '/login';
+      return localStorage.getItem('auth_token') ? '/dashboard' : '/login';
     }
   },
   // 404 route - must be the last route
@@ -86,13 +103,10 @@ router.beforeEach((to, from, next) => {
   
   // Connect to WebSocket if authenticated
   if (authService.isAuthenticated.value) {
-    import('./services/websocket').then(websocketModule => {
-      const websocket = websocketModule.default;
-      // Ensure WebSocket is connected when navigating between authenticated routes
-      if (!websocket.isConnected.value) {
-        websocket.connect();
-      }
-    });
+    // Ensure WebSocket is connected when navigating between authenticated routes
+    if (!websocket.isConnected.value) {
+      websocket.connect();
+    }
   }
   
   next();
