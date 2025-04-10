@@ -181,10 +181,11 @@ h3 {
 
 .chart-wrapper {
   flex: 0 0 auto;
-  width: 180px;
-  height: 180px;
+  width: 150px;
+  height: 150px;
   position: relative;
 }
+
 
 .custom-legend {
   flex-grow: 1;
