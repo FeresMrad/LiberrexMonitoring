@@ -6,7 +6,7 @@
       :pagination="paginationConfig"
       rowKey="log._stream_id"
       size="small"
-      :scroll="{ y: '70vh' }"
+      :scroll="{ y: '60vh' }"
       bordered
       class="compact-table"
     >
