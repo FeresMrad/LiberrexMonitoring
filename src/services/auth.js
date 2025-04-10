@@ -49,13 +49,14 @@ const login = async (email, password) => {
     const response = await api.login(email, password);
     
     // Save token and user data
-    const { token, email: userEmail, allowed_hosts } = response.data;
+    const { token, email: userEmail, allowed_hosts, is_admin } = response.data;
     
     localStorage.setItem('auth_token', token);
     
     const userData = {
       email: userEmail,
-      allowedHosts: allowed_hosts
+      allowedHosts: allowed_hosts,
+      isAdmin: is_admin
     };
     
     localStorage.setItem('auth_user', JSON.stringify(userData));
@@ -93,11 +94,17 @@ const logout = () => {
 
 // Check if user has access to a specific host
 const canAccessHost = (hostname) => {
-  if (!currentUser.value || !currentUser.value.allowedHosts) {
+  if (!currentUser.value) {
     return false;
   }
   
-  return currentUser.value.allowedHosts.includes(hostname);
+  // Admin can access all hosts
+  if (currentUser.value.isAdmin) {
+    return true;
+  }
+  
+  // Regular users can only access hosts in their allowed_hosts list
+  return (currentUser.value.allowedHosts || []).includes(hostname);
 };
 
 // Initialize on service creation
