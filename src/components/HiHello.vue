@@ -10,10 +10,13 @@
         <img src="../assets/logoliberrex.png" alt="Logo" class="header-logo" />
       </a>
       
-      <!-- Notification and Logout Icons -->
+      <!-- User Info and Logout -->
       <div class="header-icons">
+        <span v-if="currentUser" class="user-info">
+          {{ currentUser.email }}
+        </span>
         <bell-outlined class="header-icon" />
-        <logout-outlined class="header-icon" />
+        <logout-outlined class="header-icon" @click="handleLogout" />
       </div>
     </a-layout-header>
 
@@ -53,13 +56,19 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, watch, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { HomeOutlined, DesktopOutlined, WarningOutlined, BellOutlined, LogoutOutlined, MenuOutlined } from '@ant-design/icons-vue';
+import authService from '@/services/auth';
+import websocket from '@/services/websocket';
 
 const isCollapsed = ref(false);
 const route = useRoute();
+const router = useRouter();
 const selectedKeys = ref([]); // Start with an empty array
+
+// Get current user from auth service
+const currentUser = computed(() => authService.currentUser.value);
 
 // Function to update selectedKeys based on route
 const updateSelectedKeys = () => {
@@ -68,7 +77,21 @@ const updateSelectedKeys = () => {
     "/entities": ["entities"],
     "/alerts": ["alerts"],
   };
-  selectedKeys.value = pathMap[route.path] ;
+  
+  // Check if the current path or a parent path is in the pathMap
+  const path = route.path;
+  if (pathMap[path]) {
+    selectedKeys.value = pathMap[path];
+  } else if (path.startsWith('/entities/')) {
+    selectedKeys.value = ["entities"];
+  }
+};
+
+// Handle logout
+const handleLogout = () => {
+  authService.logout();
+  websocket.disconnect();
+  router.push('/login');
 };
 
 // Watch for route changes and update menu selection
@@ -114,8 +137,16 @@ const toggleSidebar = () => {
 
 .header-icon {
   font-size: 18px;
-  margin-left: 5px;
+  margin-left: 15px;
   cursor: pointer;
+}
+
+/* User info styling */
+.user-info {
+  margin-right: 15px;
+  font-size: 14px;
+  color: #008fca;
+  font-weight: bold;
 }
 
 /* SIDEBAR */

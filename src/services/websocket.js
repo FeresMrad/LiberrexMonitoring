@@ -6,8 +6,10 @@ import { ref } from 'vue';
 // When using the Vue dev server with proxy, we don't need the full URL, just the path
 const socket_path = '/socket.io'; // This will be proxied according to the vue.config.js
 
-// Create a reactive reference to track connection status
+// Create reactive references to track connection status
 const isConnected = ref(false);
+const isAuthenticated = ref(false);
+const authError = ref(null);
 
 // Create socket instance
 let socket = null;
@@ -22,6 +24,15 @@ const listeners = {};
 const connect = () => {
   if (socket) return;
 
+  // Get authentication token from localStorage
+  const token = localStorage.getItem('auth_token');
+  
+  if (!token) {
+    console.error('Authentication token not found. Please log in first.');
+    authError.value = 'You must log in before connecting.';
+    return;
+  }
+
   // Create with explicit Socket.IO configuration
   socket = io({
     path: socket_path,
@@ -29,12 +40,16 @@ const connect = () => {
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
-    timeout: 20000
+    timeout: 20000,
+    auth: { token }, // Include token in auth object
+    query: { token }  // Also include in query params for compatibility
   });
 
   socket.on('connect', () => {
     console.log('WebSocket connected successfully');
     isConnected.value = true;
+    isAuthenticated.value = true;
+    authError.value = null;
     
     // Re-subscribe to previously subscribed hosts
     subscribedHosts.forEach(host => {
@@ -56,6 +71,12 @@ const connect = () => {
   // Add error handling
   socket.on('connect_error', (error) => {
     console.error('WebSocket connection error:', error);
+    
+    // Check if it's an authentication error
+    if (error.message && (error.message.includes('authentication') || error.message.includes('token'))) {
+      authError.value = 'Authentication failed. Please log in again.';
+      isAuthenticated.value = false;
+    }
   });
 
   socket.on('error', (error) => {
@@ -75,19 +96,22 @@ const disconnect = () => {
 
   socket.disconnect();
   socket = null;
+  isConnected.value = false;
 };
 
 // Subscribe to a host for updates
 const subscribeToHost = (host) => {
   if (!socket) connect();
+  
+  if (!isConnected.value) {
+    console.error('Cannot subscribe: WebSocket not connected');
+    return;
+  }
 
   if (!subscribedHosts.has(host)) {
     subscribedHosts.add(host);
-    
-    if (isConnected.value) {
-      socket.emit('subscribe', { host });
-      console.log(`Subscribed to host: ${host}`);
-    }
+    socket.emit('subscribe', { host });
+    console.log(`Subscribed to host: ${host}`);
   }
 };
 
@@ -129,6 +153,8 @@ const emitEvent = (event, data) => {
 
 export default {
   isConnected,
+  isAuthenticated,
+  authError,
   connect,
   disconnect,
   subscribeToHost,

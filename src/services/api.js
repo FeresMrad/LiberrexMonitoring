@@ -14,6 +14,20 @@ const apiClient = axios.create({
   }
 });
 
+// Add a request interceptor to include auth token in requests
+apiClient.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  error => {
+    return Promise.reject(error);
+  }
+);
+
 // Helper function to format time range parameters
 const formatTimeRangeParams = (params, timeRange) => {
   // If timeRange is an object with start/end
@@ -30,6 +44,15 @@ const formatTimeRangeParams = (params, timeRange) => {
 
 // API methods
 export default {
+  // Authentication methods
+  login(email, password) {
+    return apiClient.post('/auth/login', { email, password });
+  },
+  
+  validateToken(token) {
+    return apiClient.post('/auth/validate', { token });
+  },
+  
   // Host methods
   getHosts() {
     return apiClient.get('/hosts');
@@ -109,28 +132,26 @@ export default {
   },
 
   // SSH sessions - active connections
-getSshSessions(host) {
-  return apiClient.get('/ssh/sessions', { params: { host } });
-},
+  getSshSessions(host) {
+    return apiClient.get('/ssh/sessions', { params: { host } });
+  },
 
+  getSshAcceptedUsers(host, timeRange = null) {
+    let params = { host };
+    params = formatTimeRangeParams(params, timeRange);
+    return apiClient.get('/ssh/accepted/users', { params });
+  },
 
-getSshAcceptedUsers(host, timeRange = null) {
-  let params = { host };
-  params = formatTimeRangeParams(params, timeRange);
-  return apiClient.get('/ssh/accepted/users', { params });
-},
+  // New methods to get only the latest metric value
+  getLatestCpuMetric(host) {
+    return apiClient.get('/metrics/cpu', { params: { host, latest: true } });
+  },
 
-// New methods to get only the latest metric value
-getLatestCpuMetric(host) {
-  return apiClient.get('/metrics/cpu', { params: { host, latest: true } });
-},
+  getLatestMemoryMetric(host) {
+    return apiClient.get('/metrics/memory', { params: { host, latest: true } });
+  },
 
-getLatestMemoryMetric(host) {
-  return apiClient.get('/metrics/memory', { params: { host, latest: true } });
-},
-
-getLatestDiskMetric(host) {
-  return apiClient.get('/metrics/disk', { params: { host, latest: true } });
-},
-
+  getLatestDiskMetric(host) {
+    return apiClient.get('/metrics/disk', { params: { host, latest: true } });
+  },
 };

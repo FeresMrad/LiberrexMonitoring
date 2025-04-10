@@ -9,18 +9,86 @@ import DashboardView from "./views/DashboardView.vue";
 import EntitiesView from "./views/EntitiesView.vue";
 import TestView from "./views/TestView.vue";
 import SshDetailsView from "./views/SshDetailsView.vue";
+import LoginView from "./views/LoginView.vue";
+import authService from "./services/auth";
 
+// Authentication guard for protected routes
+const requireAuth = (to, from, next) => {
+  if (!authService.isAuthenticated.value) {
+    // Redirect to login if not authenticated
+    return next('/login');
+  }
+  
+  // If the route requires a specific host, check permissions
+  if (to.params.host && !authService.canAccessHost(to.params.host)) {
+    // Redirect to dashboard if user doesn't have access to this host
+    return next('/dashboard');
+  }
+  
+  next();
+};
+
+// Routes configuration
 const routes = [
-  { path: "/alerts", component: TestView},
-  { path: "/entities/:host", component: MetricsView },
-  { path: "/dashboard", component: DashboardView },
-  { path: "/entities", component: EntitiesView },
-  { path: "/entities/:host/sshdetails", component: SshDetailsView},
+  { path: "/login", component: LoginView },
+  { 
+    path: "/alerts", 
+    component: TestView, 
+    beforeEnter: requireAuth 
+  },
+  { 
+    path: "/entities/:host", 
+    component: MetricsView, 
+    beforeEnter: requireAuth 
+  },
+  { 
+    path: "/dashboard", 
+    component: DashboardView, 
+    beforeEnter: requireAuth 
+  },
+  { 
+    path: "/entities", 
+    component: EntitiesView, 
+    beforeEnter: requireAuth 
+  },
+  { 
+    path: "/entities/:host/sshdetails", 
+    component: SshDetailsView,
+    beforeEnter: requireAuth 
+  },
+  // Redirect root to login or dashboard
+  { 
+    path: "/", 
+    redirect: () => {
+      return authService.isAuthenticated.value ? '/dashboard' : '/login';
+    }
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+
+// Global navigation guard to handle auth state changes
+router.beforeEach((to, from, next) => {
+  // Always allow access to login
+  if (to.path === '/login') {
+    return next();
+  }
+  
+  // Connect to WebSocket if authenticated
+  if (authService.isAuthenticated.value) {
+    import('./services/websocket').then(websocketModule => {
+      const websocket = websocketModule.default;
+      // Ensure WebSocket is connected when navigating between authenticated routes
+      if (!websocket.isConnected.value) {
+        websocket.connect();
+      }
+    });
+  }
+  
+  next();
 });
 
 const app = createApp(App);
