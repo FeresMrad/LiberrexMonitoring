@@ -115,7 +115,7 @@ thead {
 th, td {
   padding: 8px;
   border-bottom: 1px solid #ccc;
-  font-size: 13px;
+  font-size: 14px;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;

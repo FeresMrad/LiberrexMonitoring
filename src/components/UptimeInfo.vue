@@ -10,7 +10,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, defineProps } from "vue";
+import { ref, onMounted, onUnmounted, defineProps } from "vue";
 import api from '@/services/api';
 
 const props = defineProps({
@@ -86,17 +86,12 @@ const stopLocalCounter = () => {
   }
 };
 
-// Handler for host changes
-const handleHostChange = () => {
-  stopLocalCounter();
-  fetchUptime();
-};
 
-// Watch for host changes and refetch uptime
-watch(() => props.host, handleHostChange, { immediate: true });
+
 
 onMounted(() => {
   // Initial fetch and then reduced polling frequency (every 30 seconds)
+  fetchUptime()
   // This is just to check if the system is still up
   uptimeInterval = setInterval(fetchUptime, 30000);
 });
