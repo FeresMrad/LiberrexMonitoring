@@ -99,14 +99,9 @@ const searchInput = ref(null);
 const isLoading = ref(false);
 
 // Pagination configuration
-const paginationConfig = ref({
-  current: 1,
-  pageSize: 25,
-  showSizeChanger: true,
-  pageSizeOptions: ['10', '25', '50', '100'],
-  showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-  position: ['bottomRight']
-});
+ const paginationConfig = ref({
+   pageSize: 25,
+ });
 
 // Log columns definition - with adjusted width for timestamp
 const logColumns = [
@@ -162,7 +157,7 @@ function handleSearch(selectedKeys, confirm, dataIndex) {
   searchText.value = selectedKeys[0];
   searchedColumn.value = dataIndex;
   // Reset to first page when searching
-  paginationConfig.value.current = 1;
+  //paginationConfig.value.current = 1;
 } 
 
 function handleReset(clearFilters) {
@@ -202,8 +197,6 @@ onMounted(fetchLogs);
 // Watch for changes in timeRange or refreshTrigger
 watch([() => props.timeRange, () => props.refreshTrigger], () => {
   fetchLogs();
-  // Reset to first page when refreshing or changing time range
-  paginationConfig.value.current = 1;
 });
 </script>
 
@@ -228,14 +221,14 @@ watch([() => props.timeRange, () => props.refreshTrigger], () => {
   background-color: #e6f7ff;
 }
 
-/* Ensure pagination controls are easily clickable but compact */
+/* Ensure pagination controls are easily clickable but compact
 .compact-table :deep(.ant-pagination) {
   margin: 8px 0;
 }
 
 .compact-table :deep(.ant-pagination-item) {
   margin-right: 4px;
-}
+} */
 
 .compact-table :deep(.ant-select-selection-selected-value) {
   font-size: 12px;
