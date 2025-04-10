@@ -19,7 +19,7 @@
 
     <a-layout>
       <!-- SIDEBAR -->
-      <a-layout-sider class="custom-sider" :collapsed="isCollapsed" collapsed-width="50">
+      <a-layout-sider class="custom-sider" :collapsed="isCollapsed" collapsed-width="50" :style="{ position: 'fixed', zIndex: 1, height: '100vh', left: 0, top: '64px' }">
         <a-menu v-model:selectedKeys="selectedKeys" mode="inline" class="custom-menu">
           <router-link to="/dashboard">
             <a-menu-item key="dashboard">
@@ -43,7 +43,7 @@
       </a-layout-sider>
 
       <!-- MAIN CONTENT AREA -->
-      <a-layout class="content-layout">
+      <a-layout class="content-layout" :style="{ marginLeft: isCollapsed ? '50px' : '200px' }">
         <a-layout-content>
           <slot></slot> <!-- The content will be injected here -->
         </a-layout-content>
@@ -94,6 +94,10 @@ const toggleSidebar = () => {
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
   justify-content: flex-start;
   padding-left: 0; /* Remove the left padding */
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 2;
 }
 
 /* Move the logo and menu icon closer */
@@ -120,6 +124,7 @@ const toggleSidebar = () => {
 .custom-sider {
   background: #008fca;
   transition: width 0.2s;
+  overflow-y: auto;
 }
 
 .custom-menu {
@@ -149,6 +154,8 @@ const toggleSidebar = () => {
 /* MAIN CONTENT AREA */
 .content-layout {
   padding: 16px;
+  margin-top: 64px; /* Add top margin to account for fixed header */
+  transition: margin-left 0.2s;
 }
 
 /* FOOTER */
