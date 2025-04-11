@@ -37,12 +37,7 @@ const requireAuth = (to, from, next) => {
     }
   }
   
-  // If the route requires a specific host, check permissions
-  if (to.params.host && !authService.canAccessHost(to.params.host)) {
-    // Redirect to dashboard if user doesn't have access to this host
-    return next('/dashboard');
-  }
-  
+  // All authenticated users have access to all routes
   next();
 };
 
