@@ -138,7 +138,7 @@ const subscribeToHost = (host) => {
   if (!socket) connect();
   
   if (!isConnected.value) {
-    console.log(`WebSocket not connected, queueing subscription to host: ${host}`);
+    //console.log(`WebSocket not connected, queueing subscription to host: ${host}`);
     pendingSubscriptions.add(host);
     return;
   }
