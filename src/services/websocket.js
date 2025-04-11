@@ -18,6 +18,9 @@ const MAX_RECONNECT_ATTEMPTS = 3;
 // Track subscribed hosts
 const subscribedHosts = new Set();
 
+// Queue for pending subscriptions (hosts to subscribe when connection is established)
+const pendingSubscriptions = new Set();
+
 // Create an event bus to dispatch events
 const listeners = {};
 
@@ -57,6 +60,18 @@ const connect = () => {
     subscribedHosts.forEach(host => {
       socket.emit('subscribe', { host });
     });
+    
+    // Process any pending subscriptions
+    pendingSubscriptions.forEach(host => {
+      // Use direct subscription here instead of calling subscribeToHost
+      // to avoid potential infinite loops
+      if (!subscribedHosts.has(host)) {
+        subscribedHosts.add(host);
+        socket.emit('subscribe', { host });
+        console.log(`Subscribed to queued host: ${host}`);
+      }
+    });
+    pendingSubscriptions.clear();
   });
 
   socket.on('disconnect', () => {
@@ -106,6 +121,7 @@ const disconnect = () => {
       socket.emit('unsubscribe', { host });
     });
     subscribedHosts.clear();
+    pendingSubscriptions.clear();
 
     socket.disconnect();
   } catch (error) {
@@ -122,7 +138,8 @@ const subscribeToHost = (host) => {
   if (!socket) connect();
   
   if (!isConnected.value) {
-    console.error('Cannot subscribe: WebSocket not connected');
+    console.log(`WebSocket not connected, queueing subscription to host: ${host}`);
+    pendingSubscriptions.add(host);
     return;
   }
 
@@ -141,6 +158,11 @@ const unsubscribeFromHost = (host) => {
     subscribedHosts.delete(host);
     socket.emit('unsubscribe', { host });
     console.log(`Unsubscribed from host: ${host}`);
+  }
+  
+  // Also remove from pending subscriptions if it exists there
+  if (pendingSubscriptions.has(host)) {
+    pendingSubscriptions.delete(host);
   }
 };
 
