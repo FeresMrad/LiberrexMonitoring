@@ -6,9 +6,7 @@
           status="404" 
           title="Dashboard placeholder" 
         >
-          <template #extra>
-            <a-button type="primary" @click="goHome">Back Home</a-button>
-          </template>
+
         </a-result>
       </div>
     </HiHello>
@@ -16,14 +14,9 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
 import HiHello from "@/components/HiHello.vue";
 
-const router = useRouter();
 
-const goHome = () => {
-  router.push('/dashboard');
-};
 </script>
 
 <style scoped>

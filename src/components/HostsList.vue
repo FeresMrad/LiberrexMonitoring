@@ -55,7 +55,7 @@ const router = useRouter();
 const hostsData = ref([]);
 
 const hostsColumns = ref([
-  { title: "Hosts", dataIndex: "name", key: "name" },
+  { title: "Host Name", dataIndex: "name", key: "name" },
   { title: "IP Address", dataIndex: "ip", key: "ip" },
   { title: "CPU", dataIndex: "cpuUsage", key: "cpuUsage" },
   { title: "Memory", dataIndex: "memoryUsage", key: "memoryUsage" },
