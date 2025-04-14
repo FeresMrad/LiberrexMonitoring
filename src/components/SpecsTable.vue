@@ -28,6 +28,10 @@
           <td>SSH Service</td>
           <td><router-link :to="`/entities/${props.host}/sshdetails`">Details</router-link></td>
         </tr>
+        <tr>
+          <td>Agent ID</td>
+          <td>{{ host }}</td>
+        </tr>
       </tbody>
     </table>
   </div>
