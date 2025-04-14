@@ -1,11 +1,10 @@
 import axios from 'axios';
 
 // Base URL for the API
-const API_URL = process.env.BACKEND_API_URL;
 
 // Create an axios instance
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: process.env.BACKEND_API_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
