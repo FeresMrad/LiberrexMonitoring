@@ -6,7 +6,6 @@ const API_URL = process.env.VUE_APP_API_URL || 'http://82.165.230.7:5000/api';
 // Create an axios instance
 const apiClient = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
