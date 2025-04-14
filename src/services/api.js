@@ -176,7 +176,7 @@ export default {
   },
 
   updateHostName(hostId, customName) {
-    return apiClient.put('/hosts/name', { 
+    return apiClient.post('/hosts/name', { 
       hostId, 
       customName 
     });
