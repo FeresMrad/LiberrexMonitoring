@@ -174,4 +174,12 @@ export default {
   getLatestDiskMetric(host) {
     return apiClient.get('/metrics/disk', { params: { host, latest: true } });
   },
+
+  updateHostName(hostId, customName) {
+    return apiClient.put('/hosts/name', { 
+      hostId, 
+      customName 
+    });
+  },
+  
 };
