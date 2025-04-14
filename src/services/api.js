@@ -181,5 +181,9 @@ export default {
       customName 
     });
   },
+
+  deleteHost(hostId) {
+    return apiClient.delete(`/hosts/${hostId}`);
+},
   
 };

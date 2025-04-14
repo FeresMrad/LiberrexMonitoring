@@ -18,9 +18,6 @@
             <a-tooltip v-if="!record.customName" title="Using host ID (no custom name)">
               <info-circle-outlined class="info-icon" />
             </a-tooltip>
-            <a-tooltip title="Edit host name">
-              <edit-outlined class="edit-icon" @click.stop="startEditing(record)" />
-            </a-tooltip>
           </div>
           
           <!-- Edit mode -->
@@ -68,17 +65,81 @@
           size="small" 
         />
       </template>
+
+      <!-- Actions Column -->
+      <template v-if="column.key === 'actions'">
+        <div class="action-buttons">
+          <!-- Edit Button -->
+          <a-button 
+            type="danger" 
+            size="small"
+            @click.stop="startEditing(record)"
+            class="action-button"
+          >
+            <edit-outlined />
+          </a-button>
+          
+          <!-- Delete Button -->
+          <a-button 
+            type="danger" 
+            size="small"
+            @click.stop="showDeleteConfirm(record)"
+            class="action-button"
+          >
+            <delete-outlined />
+          </a-button>
+        </div>
+      </template>
     </template>
   </a-table>
   
-  <!-- Success message -->
-  <a-message></a-message>
+  <!-- Delete Confirmation Modal -->
+  <a-modal
+    v-model:open="deleteModalVisible"
+    title="Delete Host"
+    :confirm-loading="deletingHost"
+    @ok="confirmDeleteHost"
+    @cancel="cancelDeleteHost"
+    okText="Delete"
+    cancelText="Cancel"
+    okType="danger"
+  >
+    <div class="delete-confirmation">
+      <exclamation-circle-outlined class="warning-icon" />
+      <h3>Are you sure you want to delete this host?</h3>
+      <p>
+        This will permanently delete 
+        <strong v-if="hostToDelete.customName">
+          {{ hostToDelete.customName }} ({{ hostToDelete.name }})
+        </strong>
+        <strong v-else>
+          {{ hostToDelete.name }}
+        </strong> 
+        and all its monitoring data. This action cannot be undone.
+      </p>
+      <p>
+        NB: This will only delete historical data. If you wish to stop monitoring this host, you will have to uninstall the agent on such host.
+      </p>
+      <div class="host-info" v-if="hostToDelete.name">
+        <p><b>Host Name:</b> {{ hostToDelete.customName }}</p>
+        <p><b>Agent ID:</b> {{ hostToDelete.name }}</p>
+        <p><b>IP Address:</b> {{ hostToDelete.ip || 'Unknown' }}</p>
+      </div>
+    </div>
+  </a-modal>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { InfoCircleOutlined, EditOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons-vue';
+import { 
+  InfoCircleOutlined, 
+  EditOutlined, 
+  CheckOutlined, 
+  CloseOutlined, 
+  DeleteOutlined,
+  ExclamationCircleOutlined
+} from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import api from '@/services/api';
 
@@ -87,6 +148,11 @@ const hostsData = ref([]);
 const editingHostId = ref(null);
 const editName = ref('');
 
+// Delete host related variables
+const deleteModalVisible = ref(false);
+const deletingHost = ref(false);
+const hostToDelete = ref({});
+
 const hostsColumns = ref([
   { title: "Host Name", dataIndex: "name", key: "hostName" },
   { title: "IP Address", dataIndex: "ip", key: "ip" },
@@ -94,7 +160,13 @@ const hostsColumns = ref([
   { title: "Memory", dataIndex: "memoryUsage", key: "memoryUsage" },
   { title: "Disk", dataIndex: "diskUsage", key: "diskUsage" },
   { title: "System Boot", dataIndex: "systemBoot", key: "systemBoot" },
-  { title: "Activity", dataIndex: "activity", key: "activity" }
+  { title: "Activity", dataIndex: "activity", key: "activity" },
+  { 
+    title: "Actions", 
+    key: "actions",
+    width: 100,
+    align: 'center'
+  }
 ]);
 
 const fetchHosts = async () => {
@@ -145,7 +217,6 @@ const saveHostName = async (record) => {
     }
     
     // Call API to update host name
-    // Note: You'll need to implement this API endpoint
     await api.updateHostName(record.name, trimmedName);
     
     // Update local data
@@ -163,6 +234,41 @@ const saveHostName = async (record) => {
     console.error("Error updating host name:", error);
     message.error("Failed to update host name");
   }
+};
+
+// Delete host functions
+const showDeleteConfirm = (record) => {
+  hostToDelete.value = { ...record };
+  deleteModalVisible.value = true;
+};
+
+const confirmDeleteHost = async () => {
+  if (!hostToDelete.value.name) return;
+  
+  deletingHost.value = true;
+  
+  try {
+    await api.deleteHost(hostToDelete.value.name);
+    
+    // Remove host from local data
+    hostsData.value = hostsData.value.filter(host => host.name !== hostToDelete.value.name);
+    
+    // Show success message
+    message.success(`Host "${hostToDelete.value.customName || hostToDelete.value.name}" deleted successfully`);
+    
+    // Close modal
+    deleteModalVisible.value = false;
+  } catch (error) {
+    console.error("Error deleting host:", error);
+    message.error("Failed to delete host. Please try again.");
+  } finally {
+    deletingHost.value = false;
+  }
+};
+
+const cancelDeleteHost = () => {
+  deleteModalVisible.value = false;
+  hostToDelete.value = {};
 };
 
 onMounted(fetchHosts);
@@ -212,15 +318,16 @@ onMounted(fetchHosts);
   width: 100%;
 }
 
-.edit-icon {
-  color: #aaa;
-  margin-left: 8px;
-  cursor: pointer;
-  visibility: hidden;
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }
 
-.host-name-view:hover .edit-icon {
-  visibility: visible;
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .host-name-edit {
@@ -245,5 +352,29 @@ onMounted(fetchHosts);
 
 .cancel-icon {
   color: #ff4d4f;
+}
+
+/* Delete confirmation modal styling */
+.delete-confirmation {
+  text-align: center;
+  padding: 10px;
+}
+
+.warning-icon {
+  font-size: 48px;
+  color: #ff4d4f;
+  margin-bottom: 16px;
+}
+
+.host-info {
+  background-color: #f8f8f8;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.host-info p {
+  margin: 5px 0;
 }
 </style>
