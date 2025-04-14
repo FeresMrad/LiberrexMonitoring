@@ -14,11 +14,11 @@ module.exports = {
   devServer: {
     proxy: {
       '/api': {
-        target: 'http://82.165.230.7:5000',  //  Flask backend
+        target: process.env.BACKEND_API_URL,  //  Flask backend
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'http://82.165.230.7:5000',  //  WebSocket server
+        target: process.env.BACKEND_API_URL,  //  WebSocket server
         changeOrigin: true,
         ws: true,  // Enable WebSocket proxy
       }
