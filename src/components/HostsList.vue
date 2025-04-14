@@ -7,9 +7,13 @@
         </span>
       </template>
 
-      <template v-if="column.key === 'name'">
+      <template v-if="column.key === 'hostName'">
         <a @click="redirectToHostPage(record.name)">
-          {{ text }}
+          <span v-if="record.customName">{{ record.customName }}</span>
+          <span v-else class="host-id">{{ record.name }}</span>
+          <a-tooltip v-if="!record.customName" title="Using host ID (no custom name)">
+            <info-circle-outlined class="info-icon" />
+          </a-tooltip>
         </a>
       </template>
 
@@ -49,14 +53,14 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { InfoCircleOutlined } from '@ant-design/icons-vue';
 import api from '@/services/api';
 
 const router = useRouter();
 const hostsData = ref([]);
 
 const hostsColumns = ref([
-  { title: "Host ID", dataIndex: "name", key: "name" },
-  { title: "Custom Name", dataIndex: "customName", key: "customName" },
+  { title: "Host Name", dataIndex: "name", key: "hostName" },
   { title: "IP Address", dataIndex: "ip", key: "ip" },
   { title: "CPU", dataIndex: "cpuUsage", key: "cpuUsage" },
   { title: "Memory", dataIndex: "memoryUsage", key: "memoryUsage" },
@@ -106,5 +110,16 @@ onMounted(fetchHosts);
   background-color: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
+}
+
+.host-id {
+  font-family: monospace;
+  color: #666;
+}
+
+.info-icon {
+  font-size: 12px;
+  margin-left: 4px;
+  color: #aaa;
 }
 </style>
