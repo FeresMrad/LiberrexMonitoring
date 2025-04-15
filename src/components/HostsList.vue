@@ -15,7 +15,7 @@
               <span v-if="record.customName">{{ record.customName }}</span>
               <span v-else class="host-id">{{ record.name }}</span>
             </a>
-            <a-tooltip v-if="!record.customName" title="Using host ID (no custom name)">
+            <a-tooltip v-if="!record.customName" title="Using agent ID (no custom name)">
               <info-circle-outlined class="info-icon" />
             </a-tooltip>
           </div>

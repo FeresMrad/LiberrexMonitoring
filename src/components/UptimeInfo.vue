@@ -24,8 +24,7 @@ const uptimeInfo = ref({
   lastUptimeTimestamp: null,
 });
 
-let uptimeInterval = null;
-const localUptimeCounter = ref(null);
+let localUptimeCounter = ref(null);
 
 // Fetch uptime and update uptimeInfo
 const fetchUptime = async () => {
@@ -86,18 +85,13 @@ const stopLocalCounter = () => {
   }
 };
 
-
-
-
 onMounted(() => {
-  // Initial fetch and then reduced polling frequency (every 30 seconds)
-  fetchUptime()
-  // This is just to check if the system is still up
-  uptimeInterval = setInterval(fetchUptime, 30000);
+  // Fetch uptime only once when component mounts
+  fetchUptime();
+  // No interval polling anymore
 });
 
 onUnmounted(() => {
-  if (uptimeInterval) clearInterval(uptimeInterval);
   stopLocalCounter();
 });
 </script>
