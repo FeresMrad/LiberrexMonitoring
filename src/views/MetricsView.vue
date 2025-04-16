@@ -2,7 +2,7 @@
   <a-layout style="min-height: 100vh">
     <HiHello>
       <div class="containers">
-        <h2 class="chart-title">{{ host }}</h2>
+        <h2 class="chart-title">{{ displayName }}</h2>
 
         <!-- Top row: Uptime component and three GaugeChart components -->
         <div class="top-row">
@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import HiHello from "@/components/HiHello.vue"
 import UptimeInfo from "@/components/UptimeInfo.vue"
@@ -59,10 +59,33 @@ import GaugeChart from "@/components/GaugeChart.vue"
 import LogsTable from "@/components/LogsTable.vue"
 import SpecsTable from '@/components/SpecsTable.vue'
 import DiskPerChart from '@/components/DiskPerChart.vue'
+import api from '@/services/api'
 
 // Define the host for usage within the component
 const route = useRoute()
 const host = ref(route.params.host)
+const customName = ref('')
+
+// Compute display name, showing custom name if available
+const displayName = computed(() => {
+  return customName.value || host.value
+})
+
+// Fetch host details to get the custom name
+const fetchHostDetails = async () => {
+  try {
+    const response = await api.getHosts()
+    const hostDetails = response.data.find(h => h.name === host.value)
+    if (hostDetails && hostDetails.customName) {
+      customName.value = hostDetails.customName
+    }
+  } catch (error) {
+    console.error("Error fetching host details:", error)
+  }
+}
+
+// Fetch host details when component mounts
+onMounted(fetchHostDetails)
 </script>
 
 <style scoped>

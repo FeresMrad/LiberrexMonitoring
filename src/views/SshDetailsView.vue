@@ -2,7 +2,7 @@
   <a-layout style="min-height: 100vh">
     <HiHello>
       <div class="containers">
-        <h2 class="chart-title">SSH Details for {{ host }}</h2>
+        <h2 class="chart-title">SSH Details for {{ displayName }}</h2>
 
         <!-- Time range indicator - only shown when using default 60m filter -->
         <div v-if="isDefaultTimeRange" class="time-range-indicator">
@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { UndoOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
 import HiHello from "@/components/HiHello.vue"
@@ -82,10 +82,30 @@ import AcceptedSshDoughnut from '@/components/AcceptedSshDoughnut.vue'
 import FailedSshIpTable from '@/components/FailedSshIpTable.vue'
 import ActiveSshSessions from '@/components/ActiveSshSessions.vue'
 import ActiveSshCount from '@/components/ActiveSshCount.vue'
+import api from '@/services/api'
 
 // Define the host for usage within the component
 const route = useRoute()
 const host = ref(route.params.host)
+const customName = ref('')
+
+// Computed property for display name
+const displayName = computed(() => {
+  return customName.value || host.value
+})
+
+// Fetch host details to get the custom name
+const fetchHostDetails = async () => {
+  try {
+    const response = await api.getHosts()
+    const hostDetails = response.data.find(h => h.name === host.value)
+    if (hostDetails && hostDetails.customName) {
+      customName.value = hostDetails.customName
+    }
+  } catch (error) {
+    console.error("Error fetching host details:", error)
+  }
+}
 
 // Date filter state
 const startDate = ref(null)
@@ -181,6 +201,9 @@ function refreshData() {
     isLoading.value = false
   }, 500)
 }
+
+// Fetch host details when component mounts
+onMounted(fetchHostDetails)
 </script>
 
 <style scoped>
