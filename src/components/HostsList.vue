@@ -1,136 +1,140 @@
 <template>
-  <a-table :columns="hostsColumns" :data-source="hostsData" :pagination="false">
-    <template v-slot:bodyCell="{ column, text, record }">
-      <template v-if="column.key === 'activity'">
-        <span :class="text.isDown ? 'activity down' : 'activity up'">
-          {{ text.isDown ? text.timestamp : "Active" }}
-        </span>
-      </template>
+  <div> 
+    <a-table :columns="hostsColumns" :data-source="filteredHostsData" :pagination="false">
+      <template v-slot:bodyCell="{ column, text, record }">
+        <template v-if="column.key === 'activity'">
+          <span :class="text.isDown ? 'activity down' : 'activity up'">
+            {{ text.isDown ? text.timestamp : "Active" }}
+          </span>
+        </template>
 
-      <template v-if="column.key === 'hostName'">
-        <div class="host-name-cell">
-          <!-- View mode -->
-          <div v-if="!isEditing(record)" class="host-name-view">
-            <a @click="redirectToHostPage(record.name)">
-              <span v-if="record.customName">{{ record.customName }}</span>
-              <span v-else class="host-id">{{ record.name }}</span>
-            </a>
-            <a-tooltip v-if="!record.customName" title="Using agent ID (no custom name)">
-              <info-circle-outlined class="info-icon" />
-            </a-tooltip>
-          </div>
-          
-          <!-- Edit mode -->
-          <div v-else class="host-name-edit">
-            <a-input 
-              v-model:value="editName" 
-              placeholder="Enter custom name" 
-              :maxLength="30"
-              @pressEnter="saveHostName(record)"
-            />
-            <div class="edit-actions">
-              <check-outlined class="save-icon" @click="saveHostName(record)" />
-              <close-outlined class="cancel-icon" @click="cancelEditing()" />
+        <template v-if="column.key === 'hostName'">
+          <div class="host-name-cell">
+            <!-- View mode -->
+            <div v-if="!isEditing(record)" class="host-name-view">
+              <a @click="redirectToHostPage(record.name)">
+                <span v-if="record.customName">{{ record.customName }}</span>
+                <span v-else class="host-id">{{ record.name }}</span>
+              </a>
+              <a-tooltip v-if="!record.customName" title="Using agent ID (no custom name)">
+                <info-circle-outlined class="info-icon" />
+              </a-tooltip>
+            </div>
+            
+            <!-- Edit mode -->
+            <div v-else class="host-name-edit">
+              <a-input 
+                v-model:value="editName" 
+                placeholder="Enter custom name" 
+                :maxLength="30"
+                @pressEnter="saveHostName(record)"
+              />
+              <div class="edit-actions">
+                <check-outlined class="save-icon" @click="saveHostName(record)" />
+                <close-outlined class="cancel-icon" @click="cancelEditing()" />
+              </div>
             </div>
           </div>
+        </template>
+
+        <!-- Gauge Chart for CPU Usage -->
+        <template v-if="column.key === 'cpuUsage'">
+          <a-progress 
+            :percent="text" 
+            type="dashboard" 
+            :stroke-color="getColor(text)" 
+            size="small" 
+          />
+        </template>
+
+        <!-- Gauge Chart for Memory Usage -->
+        <template v-if="column.key === 'memoryUsage'">
+          <a-progress 
+            :percent="text" 
+            type="dashboard" 
+            :stroke-color="getColor(text)" 
+            size="small" 
+          />
+        </template>
+
+        <!-- Gauge Chart for Disk Usage -->
+        <template v-if="column.key === 'diskUsage'">
+          <a-progress 
+            :percent="text" 
+            type="dashboard" 
+            :stroke-color="getColor(text)" 
+            size="small" 
+          />
+        </template>
+
+        <!-- Actions Column -->
+        <template v-if="column.key === 'actions'">
+          <div class="action-buttons">
+            <!-- Edit Button - admin only -->
+            <a-button 
+              v-if="isAdmin"
+              type="primary" 
+              size="small"
+              @click.stop="startEditing(record)"
+              class="action-button"
+            >
+              <edit-outlined />
+            </a-button>
+            
+            <!-- Delete Button - admin only -->
+            <a-button 
+              v-if="isAdmin"
+              type="danger" 
+              size="small"
+              @click.stop="showDeleteConfirm(record)"
+              class="action-button"
+            >
+              <delete-outlined />
+            </a-button>
+          </div>
+        </template>
+      </template>
+    </a-table>
+    
+    <!-- Delete Confirmation Modal -->
+    <a-modal
+      v-model:open="deleteModalVisible"
+      title="Delete Host"
+      :confirmLoading="deletingHost"
+      @ok="confirmDeleteHost"
+      @cancel="cancelDeleteHost"
+      okText="Delete"
+      cancelText="Cancel"
+      okType="danger"
+    >
+      <div class="delete-confirmation">
+        <exclamation-circle-outlined class="warning-icon" />
+        <h3>Are you sure you want to delete this host?</h3>
+        <p>
+          This will permanently delete 
+          <strong v-if="hostToDelete.customName">
+            {{ hostToDelete.customName }} ({{ hostToDelete.name }})
+          </strong>
+          <strong v-else>
+            {{ hostToDelete.name }}
+          </strong> 
+          and all its monitoring data. This action cannot be undone.
+        </p>
+        <p>
+          NB: This will only delete historical data. If you wish to stop monitoring this host, you will have to uninstall the agent on such host.
+        </p>
+        <div class="host-info" v-if="hostToDelete.name">
+          <p><b>Host Name:</b> {{ hostToDelete.customName || '' }}</p>
+          <p><b>Agent ID:</b> {{ hostToDelete.name }}</p>
+          <p><b>IP Address:</b> {{ hostToDelete.ip || 'Unknown' }}</p>
         </div>
-      </template>
-
-      <!-- Gauge Chart for CPU Usage -->
-      <template v-if="column.key === 'cpuUsage'">
-        <a-progress 
-          :percent="text" 
-          type="dashboard" 
-          :stroke-color="getColor(text)" 
-          size="small" 
-        />
-      </template>
-
-      <!-- Gauge Chart for Memory Usage -->
-      <template v-if="column.key === 'memoryUsage'">
-        <a-progress 
-          :percent="text" 
-          type="dashboard" 
-          :stroke-color="getColor(text)" 
-          size="small" 
-        />
-      </template>
-
-      <!-- Gauge Chart for Disk Usage -->
-      <template v-if="column.key === 'diskUsage'">
-        <a-progress 
-          :percent="text" 
-          type="dashboard" 
-          :stroke-color="getColor(text)" 
-          size="small" 
-        />
-      </template>
-
-      <!-- Actions Column -->
-      <template v-if="column.key === 'actions'">
-        <div class="action-buttons">
-          <!-- Edit Button -->
-          <a-button 
-            type="danger" 
-            size="small"
-            @click.stop="startEditing(record)"
-            class="action-button"
-          >
-            <edit-outlined />
-          </a-button>
-          
-          <!-- Delete Button -->
-          <a-button 
-            type="danger" 
-            size="small"
-            @click.stop="showDeleteConfirm(record)"
-            class="action-button"
-          >
-            <delete-outlined />
-          </a-button>
-        </div>
-      </template>
-    </template>
-  </a-table>
-  
-  <!-- Delete Confirmation Modal -->
-  <a-modal
-    v-model:open="deleteModalVisible"
-    title="Delete Host"
-    :confirm-loading="deletingHost"
-    @ok="confirmDeleteHost"
-    @cancel="cancelDeleteHost"
-    okText="Delete"
-    cancelText="Cancel"
-    okType="danger"
-  >
-    <div class="delete-confirmation">
-      <exclamation-circle-outlined class="warning-icon" />
-      <h3>Are you sure you want to delete this host?</h3>
-      <p>
-        This will permanently delete 
-        <strong v-if="hostToDelete.customName">
-          {{ hostToDelete.customName }} ({{ hostToDelete.name }})
-        </strong>
-        <strong v-else>
-          {{ hostToDelete.name }}
-        </strong> 
-        and all its monitoring data. This action cannot be undone.
-      </p>
-      <p>
-        NB: This will only delete historical data. If you wish to stop monitoring this host, you will have to uninstall the agent on such host.
-      </p>
-      <div class="host-info" v-if="hostToDelete.name">
-        <p><b>Host Name:</b> {{ hostToDelete.customName }}</p>
-        <p><b>Agent ID:</b> {{ hostToDelete.name }}</p>
-        <p><b>IP Address:</b> {{ hostToDelete.ip || 'Unknown' }}</p>
       </div>
-    </div>
-  </a-modal>
+    </a-modal>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { 
   InfoCircleOutlined, 
@@ -142,9 +146,11 @@ import {
 } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import api from '@/services/api';
+import authService from '@/services/auth';
 
 const router = useRouter();
 const hostsData = ref([]);
+const accessibleHosts = ref([]);
 const editingHostId = ref(null);
 const editName = ref('');
 
@@ -152,6 +158,24 @@ const editName = ref('');
 const deleteModalVisible = ref(false);
 const deletingHost = ref(false);
 const hostToDelete = ref({});
+
+// Check if user is admin
+const isAdmin = computed(() => authService.isAdmin());
+
+// Filter hosts based on user access permissions
+const filteredHostsData = computed(() => {
+  // If admin, show all hosts
+  if (isAdmin.value) {
+    return hostsData.value;
+  }
+  
+  // Otherwise filter by accessible hosts
+  const accessibleHostIds = accessibleHosts.value.map(host => host.host);
+  return hostsData.value.filter(host => 
+    accessibleHostIds.includes(host.name) && 
+    accessibleHosts.value.find(ah => ah.host === host.name)?.access
+  );
+});
 
 const hostsColumns = ref([
   { title: "Host Name", dataIndex: "name", key: "hostName" },
@@ -175,11 +199,26 @@ const fetchHosts = async () => {
     hostsData.value = response.data;
   } catch (error) {
     console.error("Error fetching hosts:", error);
+    message.error("Failed to load hosts");
+  }
+};
+
+const fetchAccessibleHosts = async () => {
+  try {
+    const response = await api.getAccessibleHosts();
+    accessibleHosts.value = response.data;
+  } catch (error) {
+    console.error("Error fetching host permissions:", error);
   }
 };
 
 const redirectToHostPage = hostName => {
-  router.push(`/entities/${hostName}`);
+  // Check if user has access to this host
+  if (isAdmin.value || accessibleHosts.value.some(h => h.host === hostName && h.access)) {
+    router.push(`/entities/${hostName}`);
+  } else {
+    message.error("You don't have access to this host");
+  }
 };
 
 const getColor = (value) => {
@@ -271,10 +310,31 @@ const cancelDeleteHost = () => {
   hostToDelete.value = {};
 };
 
-onMounted(fetchHosts);
+onMounted(async () => {
+  // First fetch accessible hosts to determine permissions
+  await fetchAccessibleHosts();
+  // Then fetch all hosts (the API will filter based on permissions)
+  await fetchHosts();
+});
 </script>
 
 <style scoped>
+.permission-info {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.permission-info .anticon {
+  color: #1890ff;
+  margin-right: 8px;
+}
+
 .activity {
   padding: 4px 8px;
   border-radius: 4px;

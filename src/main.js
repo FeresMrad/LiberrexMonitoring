@@ -9,9 +9,12 @@ import EntitiesView from "./views/EntitiesView.vue";
 import TestView from "./views/TestView.vue";
 import SshDetailsView from "./views/SshDetailsView.vue";
 import LoginView from "./views/LoginView.vue";
-import NotFoundView from "./views/NotFoundView.vue"; // Import the new 404 page
+import NotFoundView from "./views/NotFoundView.vue";
+import UserManagementView from "./views/UserManagementView.vue"; // Import the new user management view
 import authService from "./services/auth";
 import websocket from "./services/websocket";
+import api from "./services/api";
+import { message } from 'ant-design-vue';
 
 // Authentication guard for protected routes
 const requireAuth = (to, from, next) => {
@@ -41,6 +44,54 @@ const requireAuth = (to, from, next) => {
   next();
 };
 
+// Admin role guard
+const requireAdmin = (to, from, next) => {
+  // First check authentication
+  requireAuth(to, from, () => {
+    // If user is authenticated and is admin, allow access
+    if (authService.isAdmin()) {
+      next();
+    } else {
+      // Otherwise redirect to dashboard
+      message.error('You do not have permission to access this page');
+      next('/dashboard');
+    }
+  });
+};
+
+// Host access guard
+const requireHostAccess = (to, from, next) => {
+  // First check authentication
+  requireAuth(to, from, () => {
+    // Get the host from the route params
+    const host = to.params.host;
+    
+    // Admin always has access
+    if (authService.isAdmin()) {
+      next();
+      return;
+    }
+    
+    // Check if the user has access to this host
+    api.getAccessibleHosts()
+      .then(response => {
+        const hostAccess = response.data.find(h => h.host === host);
+        
+        if (hostAccess && hostAccess.access) {
+          next(); // User has access, proceed
+        } else {
+          // User doesn't have access, redirect to entities list
+          message.error('You do not have access to this host');
+          next('/entities');
+        }
+      })
+      .catch(error => {
+        console.error('Error checking host access:', error);
+        next('/entities'); // Redirect on error
+      });
+  });
+};
+
 // Routes configuration
 const routes = [
   { path: "/login", component: LoginView },
@@ -52,7 +103,7 @@ const routes = [
   { 
     path: "/entities/:host", 
     component: MetricsView, 
-    beforeEnter: requireAuth 
+    beforeEnter: requireHostAccess
   },
   { 
     path: "/dashboard", 
@@ -67,7 +118,12 @@ const routes = [
   { 
     path: "/entities/:host/sshdetails", 
     component: SshDetailsView,
-    beforeEnter: requireAuth 
+    beforeEnter: requireHostAccess
+  },
+  {
+    path: "/admin/users",
+    component: UserManagementView,
+    beforeEnter: requireAdmin // Use admin guard for this route
   },
   // Redirect root to login or dashboard
   { 

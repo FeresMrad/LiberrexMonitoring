@@ -34,17 +34,13 @@ const login = async (email, password) => {
     const response = await api.login(email, password);
     
     // Save token and user data
-    const { token, email: userEmail } = response.data;
+    const { token, user } = response.data;
     
     localStorage.setItem('auth_token', token);
-    
-    // Simplified user data
-    const userData = { email: userEmail };
-    
-    localStorage.setItem('auth_user', JSON.stringify(userData));
+    localStorage.setItem('auth_user', JSON.stringify(user));
     
     // Update state
-    currentUser.value = userData;
+    currentUser.value = user;
     isAuthenticated.value = true;
     
     // Connect to websocket with the new token
@@ -74,10 +70,34 @@ const logout = () => {
   isAuthenticated.value = false;
 };
 
-// Check if user has access to a specific host - simplified
-const canAccessHost = () => {
-  // All authenticated users can access all hosts
-  return isAuthenticated.value;
+// Check if user is an admin
+const isAdmin = () => {
+  return currentUser.value?.role === 'admin';
+};
+
+// Check if user has access to a specific host
+const canAccessHost = (hostId) => {
+  // Admin always has access
+  if (isAdmin()) {
+    return true;
+  }
+  
+  // Not authenticated
+  if (!isAuthenticated.value) {
+    return false;
+  }
+  
+  // Check user's permissions for this specific host
+  const userPermissions = currentUser.value?.permissions;
+  
+  // If user has wildcard access
+  if (userPermissions?.hosts === '*') {
+    return true;
+  }
+  
+  // Check if host is in the user's allowed hosts
+  return Array.isArray(userPermissions?.hosts) && 
+         userPermissions.hosts.includes(hostId);
 };
 
 // Initialize on service creation
@@ -90,5 +110,6 @@ export default {
   isLoading,
   login,
   logout,
+  isAdmin,
   canAccessHost
 };

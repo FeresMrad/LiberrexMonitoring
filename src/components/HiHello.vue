@@ -42,6 +42,17 @@
               <span>Alerts</span>
             </a-menu-item>
           </router-link>
+          
+          <!-- Admin section - only visible to admin users -->
+          <template v-if="isAdmin">
+            <a-divider style="margin: 8px 0; background-color: rgba(255, 255, 255, 0.2)" />
+            <router-link to="/admin/users">
+              <a-menu-item key="users">
+                <team-outlined />
+                <span>Users</span>
+              </a-menu-item>
+            </router-link>
+          </template>
         </a-menu>
       </a-layout-sider>
 
@@ -58,7 +69,15 @@
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { HomeOutlined, DesktopOutlined, WarningOutlined, BellOutlined, LogoutOutlined, MenuOutlined } from '@ant-design/icons-vue';
+import { 
+  HomeOutlined, 
+  DesktopOutlined, 
+  WarningOutlined, 
+  BellOutlined, 
+  LogoutOutlined, 
+  MenuOutlined,
+  TeamOutlined 
+} from '@ant-design/icons-vue';
 import authService from '@/services/auth';
 import websocket from '@/services/websocket';
 
@@ -70,12 +89,16 @@ const selectedKeys = ref([]); // Start with an empty array
 // Get current user from auth service
 const currentUser = computed(() => authService.currentUser.value);
 
+// Check if user is admin
+const isAdmin = computed(() => authService.isAdmin());
+
 // Function to update selectedKeys based on route
 const updateSelectedKeys = () => {
   const pathMap = {
     "/dashboard": ["dashboard"],
     "/entities": ["entities"],
     "/alerts": ["alerts"],
+    "/admin/users": ["users"],
   };
   
   // Check if the current path or a parent path is in the pathMap

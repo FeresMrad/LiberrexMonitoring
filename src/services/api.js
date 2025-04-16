@@ -184,5 +184,39 @@ export default {
   deleteHost(hostId) {
     return apiClient.delete(`/hosts/${hostId}`);
 },
+// Add these methods to your existing src/services/api.js file
+
+// User Management Methods
+getUsers() {
+  return apiClient.get('/users');
+},
+
+getUser(userId) {
+  return apiClient.get(`/users/${userId}`);
+},
+
+getCurrentUser() {
+  return apiClient.get('/users/me');
+},
+
+createUser(userData) {
+  return apiClient.post('/users', userData);
+},
+
+updateUser(userId, userData) {
+  return apiClient.put(`/users/${userId}`, userData);
+},
+
+deleteUser(userId) {
+  return apiClient.delete(`/users/${userId}`);
+},
+
+updateUserPermissions(userId, permissions) {
+  return apiClient.put(`/users/${userId}/permissions`, permissions);
+},
+
+getAccessibleHosts() {
+  return apiClient.get('/users/hosts');
+},
   
 };
