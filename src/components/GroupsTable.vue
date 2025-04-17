@@ -4,7 +4,6 @@
       <a-table 
         :columns="columns" 
         :data-source="groups" 
-        :loading="loading"
         rowKey="id"
       >
         <template #bodyCell="{ column, record }">
@@ -16,7 +15,7 @@
                   <a @click.stop="redirectToHost(hostId)" class="host-link">
                     {{ getHostDisplayName(hostId) }}
                   </a>
-                  <span v-if="index < record.hosts.length - 1">, </span>
+                  <span v-if="index < record.hosts.length - 1"> </span>
                 </span>
                 <a-button 
                   type="link" 
@@ -60,7 +59,6 @@
                   type="default" 
                   size="small" 
                   @click="handleDelete(record)"
-                  :disabled="record.id === 'default'"
                 >
                   <template #icon><DeleteOutlined /></template>
                 </a-button>
@@ -265,10 +263,6 @@
   
   // Handle delete button click
   const handleDelete = (record) => {
-    if (record.id === 'default') {
-      message.warning('The default group cannot be deleted');
-      return;
-    }
     
     if (deleteHandler) {
       deleteHandler(record);
