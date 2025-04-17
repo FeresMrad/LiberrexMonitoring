@@ -172,7 +172,6 @@
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      sorter: (a, b) => a.name.localeCompare(b.name)
     },
     {
       title: 'Description',
@@ -185,7 +184,6 @@
       dataIndex: 'hosts',
       key: 'hosts',
       ellipsis: true,
-      sorter: (a, b) => a.hosts.length - b.hosts.length
     },
     {
       title: 'Actions',
