@@ -105,32 +105,54 @@
   
       <!-- Permissions Modal -->
       <a-modal
-        v-model:open="permissionsModalVisible"
-        @ok="handlePermissionsModalOk"
-        @cancel="handlePermissionsModalCancel"
-        :confirmLoading="modalLoading"
-      >
-        <div v-if="selectedUser">
-          <h3>Permissions for {{ selectedUser.name }}</h3>
-          
-          <div class="permission-selector">
-            <a-radio-group v-model:value="permissionType" @change="handlePermissionTypeChange">
-              <a-radio value="all">Access All Hosts</a-radio>
-              <a-radio value="specific">Access Specific Hosts</a-radio>
-              <a-radio value="none">No Host Access</a-radio>
-            </a-radio-group>
+    v-model:open="permissionsModalVisible"
+    @ok="handlePermissionsModalOk"
+    @cancel="handlePermissionsModalCancel"
+    :confirmLoading="modalLoading"
+  >
+    <div v-if="selectedUser">
+      <h3>Permissions for {{ selectedUser.name }}</h3>
+      
+      <div class="permission-selector">
+        <a-radio-group v-model:value="permissionType" @change="handlePermissionTypeChange">
+          <a-radio value="all">Access All Hosts</a-radio>
+          <a-radio value="specific">Access Specific Hosts</a-radio>
+          <a-radio value="groups">Access by Groups</a-radio>
+          <a-radio value="none">No Host Access</a-radio>
+        </a-radio-group>
+      </div>
+      
+      <!-- Host selection - shown when "specific" is selected -->
+      <div v-if="permissionType === 'specific'" class="host-selection">
+        <h4>Select Hosts</h4>
+        <a-checkbox-group v-model:value="selectedHosts">
+          <div v-for="host in availableHosts" :key="host.id">
+            <a-checkbox :value="host.id">{{ host.displayName }}</a-checkbox>
           </div>
-          
-          <div v-if="permissionType === 'specific'" class="host-selection">
-            <h4>Select Hosts</h4>
-            <a-checkbox-group v-model:value="selectedHosts">
-              <div v-for="host in availableHosts" :key="host.id">
-                <a-checkbox :value="host.id">{{ host.displayName }}</a-checkbox>
+        </a-checkbox-group>
+      </div>
+      
+      <!-- Group selection - NEW: shown when "groups" is selected -->
+      <div v-if="permissionType === 'groups'" class="group-selection">
+        <h4>Select Groups</h4>
+        <a-spin v-if="groupsLoading" />
+        <a-checkbox-group v-else v-model:value="selectedGroups">
+          <div v-for="group in availableGroups" :key="group.id" class="group-item">
+            <a-checkbox :value="group.id">
+              <div class="group-info">
+                <div class="group-name">{{ group.name }}</div>
+                <div class="group-description">{{ group.description }}</div>
+                <div class="host-count">
+                  {{ group.hosts ? group.hosts.length : 0 }} hosts in this group
+                </div>
               </div>
-            </a-checkbox-group>
+            </a-checkbox>
           </div>
-        </div>
-      </a-modal>
+        </a-checkbox-group>
+        <a-empty v-if="!groupsLoading && availableGroups.length === 0" description="No groups found" />
+      </div>
+    </div>
+  </a-modal>
   
       <!-- Delete Confirmation Modal -->
       <a-modal
@@ -189,6 +211,11 @@
   const availableHosts = ref([]);
   const selectedHosts = ref([]);
   const permissionType = ref('none');
+
+  // NEW: Group management state
+const availableGroups = ref([]);
+const selectedGroups = ref([]);
+const groupsLoading = ref(false);
   
   // Table columns
   const columns = [
@@ -280,6 +307,19 @@
       message.error('Failed to load hosts');
     }
   };
+
+  const fetchGroups = async () => {
+  groupsLoading.value = true;
+  try {
+    const response = await api.getGroups();
+    availableGroups.value = response.data;
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    message.error('Failed to load host groups');
+  } finally {
+    groupsLoading.value = false;
+  }
+};
   
   // Show modal for creating a new user
   const showCreateUserModal = () => {
@@ -368,60 +408,83 @@
   };
   
   // Edit permissions for a user
-  const editPermissions = (user) => {
-    selectedUser.value = user;
-    
-    // Set initial permission type
-    if (user.permissions?.hosts === '*') {
-      permissionType.value = 'all';
-      selectedHosts.value = [];
-    } else if (user.permissions?.hosts?.length > 0) {
-      permissionType.value = 'specific';
-      selectedHosts.value = [...user.permissions.hosts];
-    } else {
-      permissionType.value = 'none';
-      selectedHosts.value = [];
-    }
-    
-    permissionsModalVisible.value = true;
-  };
+const editPermissions = (user) => {
+  selectedUser.value = user;
+  
+  // Set initial permission type
+  if (user.permissions?.hosts === '*') {
+    permissionType.value = 'all';
+    selectedHosts.value = [];
+    selectedGroups.value = [];
+  } else if (user.permissions?.groups && user.permissions.groups.length > 0) {
+    permissionType.value = 'groups';
+    selectedGroups.value = [...user.permissions.groups];
+    selectedHosts.value = [];
+  } else if (user.permissions?.hosts?.length > 0) {
+    permissionType.value = 'specific';
+    selectedHosts.value = [...user.permissions.hosts];
+    selectedGroups.value = [];
+  } else {
+    permissionType.value = 'none';
+    selectedHosts.value = [];
+    selectedGroups.value = [];
+  }
+  
+  permissionsModalVisible.value = true;
+  
+  // Ensure data is loaded for the selected permission type
+  if (permissionType.value === 'specific') {
+    fetchHosts();
+  } else if (permissionType.value === 'groups') {
+    fetchGroups();
+  }
+};
   
   // Handle permission type change
   const handlePermissionTypeChange = (e) => {
-    const value = e.target.value;
-    if (value === 'specific' && availableHosts.value.length === 0) {
-      // Load hosts if not already loaded
-      fetchHosts();
-    }
-  };
+  const value = e.target.value;
+  permissionType.value = value;
+  
+  if (value === 'specific' && availableHosts.value.length === 0) {
+    // Load hosts if not already loaded
+    fetchHosts();
+  } else if (value === 'groups' && availableGroups.value.length === 0) {
+    // Load groups if not already loaded
+    fetchGroups();
+  }
+};
   
   // Handle permissions modal OK button
-  const handlePermissionsModalOk = async () => {
-    modalLoading.value = true;
+const handlePermissionsModalOk = async () => {
+  modalLoading.value = true;
+  
+  try {
+    let permissions = {};
     
-    try {
-      let permissions = { hosts: [] };
-      
-      if (permissionType.value === 'all') {
-        permissions.hosts = '*';
-      } else if (permissionType.value === 'specific') {
-        permissions.hosts = selectedHosts.value;
-      }
-      
-      await api.updateUserPermissions(selectedUser.value.id, permissions);
-      message.success('Permissions updated successfully');
-      
-      // Refresh user list
-      fetchUsers();
-      permissionsModalVisible.value = false;
-      emit('refresh');
-    } catch (error) {
-      console.error('Error updating permissions:', error);
-      message.error(error.response?.data?.error || 'Failed to update permissions');
-    } finally {
-      modalLoading.value = false;
+    if (permissionType.value === 'all') {
+      permissions = { hosts: '*', groups: [] };
+    } else if (permissionType.value === 'specific') {
+      permissions = { hosts: selectedHosts.value, groups: [] };
+    } else if (permissionType.value === 'groups') {
+      permissions = { hosts: [], groups: selectedGroups.value };
+    } else {
+      permissions = { hosts: [], groups: [] };
     }
-  };
+    
+    await api.updateUserPermissions(selectedUser.value.id, permissions);
+    message.success('Permissions updated successfully');
+    
+    // Refresh user list
+    fetchUsers();
+    permissionsModalVisible.value = false;
+    emit('refresh');
+  } catch (error) {
+    console.error('Error updating permissions:', error);
+    message.error(error.response?.data?.error || 'Failed to update permissions');
+  } finally {
+    modalLoading.value = false;
+  }
+};
   
   // Handle permissions modal cancel
   const handlePermissionsModalCancel = () => {
@@ -473,15 +536,15 @@
   
   // Lifecycle hooks
   onMounted(() => {
-    // If user data exists, refresh to get latest user role/permissions
-    if (authService.isAuthenticated.value) {
-      authService.refreshUserProfile();
-    }
-    
-    // Fetch initial data
-    fetchUsers();
-    fetchHosts();
-  });
+  // If user data exists, refresh to get latest user role/permissions
+  if (authService.isAuthenticated.value) {
+    authService.refreshUserProfile();
+  }
+  
+  // Fetch initial data
+  fetchUsers();
+  // We'll fetch hosts and groups on demand based on permission type
+});
   
   // Expose functions for parent component
   defineExpose({
@@ -516,4 +579,44 @@
     margin-top: 0;
     margin-bottom: 10px;
   }
-  </style>
+
+  .group-selection {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.group-item {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.group-item:hover {
+  background-color: #f0f0f0;
+}
+
+.group-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.group-name {
+  font-weight: bold;
+}
+
+.group-description {
+  font-size: 12px;
+  color: #666;
+}
+
+.host-count {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+</style>

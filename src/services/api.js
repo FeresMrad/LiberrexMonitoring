@@ -227,6 +227,10 @@ getGroup(groupId) {
   return apiClient.get(`/groups/${groupId}`);
 },
 
+getHostGroups(hostId) {
+  return apiClient.get(`/groups/hosts/${hostId}`);
+},
+
 createGroup(groupData) {
   return apiClient.post('/groups', groupData);
 },
