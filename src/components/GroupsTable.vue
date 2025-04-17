@@ -8,15 +8,23 @@
         rowKey="id"
       >
         <template #bodyCell="{ column, record }">
-          <!-- Hosts Column - Show host list directly -->
+          <!-- Hosts Column - Show host list with clickable hosts -->
           <template v-if="column.key === 'hosts'">
             <div class="hosts-preview">
               <div v-if="record.hosts.length > 0" class="host-list">
-                <a-tooltip title="Manage hosts">
-                  <div class="hosts-summary" @click="showHostsModal(record)">
-                    {{ formatHostList(record.hosts) }}
-                  </div>
-                </a-tooltip>
+                <span v-for="(hostId, index) in record.hosts" :key="hostId" class="host-item">
+                  <a @click.stop="redirectToHost(hostId)" class="host-link">
+                    {{ getHostDisplayName(hostId) }}
+                  </a>
+                  <span v-if="index < record.hosts.length - 1">, </span>
+                </span>
+                <a-button 
+                  type="link" 
+                  size="small" 
+                  @click.stop="showHostsModal(record)" 
+                  class="manage-hosts-btn"
+                >
+                </a-button>
               </div>
               <div v-else class="no-hosts">
                 <a-button type="link" @click="showHostsModal(record)">
@@ -130,11 +138,15 @@
   import { 
     EditOutlined, 
     DeleteOutlined, 
-    TeamOutlined 
+    TeamOutlined,
   } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
+  import { useRouter } from 'vue-router';
   import api from '@/services/api';
     
+  // Initialize router
+  const router = useRouter();
+  
   // Table data
   const groups = ref([]);
   const loading = ref(true);
@@ -223,18 +235,15 @@
     }
   };
   
-  // Format host list for display
-  const formatHostList = (hostIds) => {
-    if (!hostIds || hostIds.length === 0) return 'No hosts';
-    
-    // Get host names from ids
-    const hostNames = hostIds.map(id => {
-      const host = allHosts.value.find(h => h.name === id);
-      return host ? (host.customName || host.name) : id;
-    });
-    
-    // Show all hosts directly
-    return hostNames.join(', ');
+  // Get the display name for a host ID
+  const getHostDisplayName = (hostId) => {
+    const host = allHosts.value.find(h => h.name === hostId);
+    return host ? (host.customName || host.name) : hostId;
+  };
+  
+  // Redirect to host metrics view
+  const redirectToHost = (hostId) => {
+    router.push(`/entities/${hostId}`);
   };
   
   // Set external edit handler
@@ -400,6 +409,9 @@
   
   .host-list {
     max-width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
   }
   
   .no-hosts {
@@ -407,10 +419,18 @@
     font-style: italic;
   }
   
-  .hosts-summary {
-    cursor: pointer;
+  .host-link {
     color: #1890ff;
-    text-decoration: underline dotted;
+    cursor: pointer;
+  }
+  
+  .host-link:hover {
+    text-decoration: underline;
+  }
+  
+  .manage-hosts-btn {
+    padding: 0 4px;
+    margin-left: 8px;
   }
   
   /* Host selection styles */
