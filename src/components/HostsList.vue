@@ -72,7 +72,7 @@
           <div class="action-buttons">
             <!-- Edit Button -->
             <a-button 
-              type="primary" 
+              type="default" 
               size="small"
               @click.stop="startEditing(record)"
               class="action-button"
@@ -82,7 +82,7 @@
             
             <!-- Delete Button -->
             <a-button 
-              type="danger" 
+              type="default" 
               size="small"
               @click.stop="showDeleteConfirm(record)"
               class="action-button"

@@ -32,21 +32,21 @@
           <template v-if="column.key === 'actions'">
             <div class="action-buttons">
               <a-tooltip title="Edit User">
-                <a-button type="primary" size="small" @click="editUser(record)">
+                <a-button type="default" size="small" @click="editUser(record)" :disabled="isSuperAdmin(record)">
                   <template #icon><EditOutlined /></template>
                 </a-button>
               </a-tooltip>
               <a-tooltip title="Manage Permissions">
-                <a-button type="default" size="small" @click="editPermissions(record)">
+                <a-button type="default" size="small" @click="editPermissions(record)" :disabled="isSuperAdmin(record)">
                   <template #icon><KeyOutlined /></template>
                 </a-button>
               </a-tooltip>
               <a-tooltip title="Delete User">
                 <a-button 
-                  type="danger" 
+                  type="default" 
                   size="small" 
                   @click="confirmDeleteUser(record)"
-                  :disabled="record.role === 'admin' && record.id === currentUser.id"
+                  :disabled="isSuperAdmin(record)" 
                 >
                   <template #icon><DeleteOutlined /></template>
                 </a-button>
@@ -148,13 +148,12 @@
   } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
   import api from '@/services/api';
-  import authService from '@/services/auth';
   
   // Event emits
   const emit = defineEmits(['refresh']);
   
   // Current user
-  const currentUser = computed(() => authService.currentUser.value);
+  //const currentUser = computed(() => authService.currentUser.value);
   
   // User list state
   const users = ref([]);
@@ -280,6 +279,10 @@
   
   // Edit an existing user
   const editUser = (user) => {
+    if (isSuperAdmin(user)) {
+    message.warning("The system administrator account cannot be modified");
+    return;
+  }
     editingUser.value = true;
     selectedUser.value = user;
     userForm.value = {
@@ -421,7 +424,11 @@
   const handleDeleteModalCancel = () => {
     deleteModalVisible.value = false;
   };
-  
+  const SUPER_ADMIN_ID = "admin";
+  const isSuperAdmin = (user) => {
+  return user.id === SUPER_ADMIN_ID;
+};
+
   // Lifecycle hooks
   onMounted(() => {
     // Fetch initial data
