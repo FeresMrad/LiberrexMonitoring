@@ -70,9 +70,32 @@ const logout = () => {
   isAuthenticated.value = false;
 };
 
+// Refresh the current user's profile
+const refreshUserProfile = async () => {
+  try {
+    const response = await api.getCurrentUser();
+    if (response.data) {
+      // Update only the current user object, don't change authentication state
+      currentUser.value = response.data;
+      
+      // Also update localStorage
+      localStorage.setItem('auth_user', JSON.stringify(response.data));
+    }
+    return true;
+  } catch (error) {
+    console.error('Error refreshing user profile:', error);
+    return false;
+  }
+};
+
 // Check if user is an admin
 const isAdmin = () => {
   return currentUser.value?.role === 'admin';
+};
+
+// Check if user is the super admin
+const isSuperAdmin = () => {
+  return currentUser.value?.isSuperAdmin === true;
 };
 
 // Check if user has access to a specific host
@@ -110,6 +133,8 @@ export default {
   isLoading,
   login,
   logout,
+  refreshUserProfile,
   isAdmin,
+  isSuperAdmin,
   canAccessHost
 };

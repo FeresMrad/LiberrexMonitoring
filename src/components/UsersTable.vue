@@ -14,7 +14,7 @@
             </a-tag>
           </template>
   
-          <!-- Permissions Column - FIXED to consider admin role -->
+          <!-- Permissions Column -->
           <template v-if="column.key === 'permissions'">
             <div v-if="record.role === 'admin'">
               <a-tag color="red">Admin Access</a-tag>
@@ -38,13 +38,18 @@
                   type="default" 
                   size="small" 
                   @click="editUser(record)" 
-                  :disabled="isSuperAdmin(record) || (record.role === 'admin' && !currentUserIsSuperAdmin())"
+                  :disabled="isSuperAdmin(record) || (record.role === 'admin' && !isSuperAdmin())"
                 >
                   <template #icon><EditOutlined /></template>
                 </a-button>
               </a-tooltip>
               <a-tooltip title="Manage Permissions">
-                <a-button type="default" size="small" @click="editPermissions(record)" :disabled="isSuperAdmin(record) || record.role === 'admin'">
+                <a-button 
+                  type="default" 
+                  size="small" 
+                  @click="editPermissions(record)" 
+                  :disabled="isSuperAdmin(record) || record.role === 'admin'"
+                >
                   <template #icon><KeyOutlined /></template>
                 </a-button>
               </a-tooltip>
@@ -53,7 +58,7 @@
                   type="default" 
                   size="small" 
                   @click="confirmDeleteUser(record)"
-                  :disabled="isSuperAdmin(record) || (record.role === 'admin' && !currentUserIsSuperAdmin())" 
+                  :disabled="isSuperAdmin(record) || (record.role === 'admin' && !isSuperAdmin())" 
                 >
                   <template #icon><DeleteOutlined /></template>
                 </a-button>
@@ -90,7 +95,7 @@
             <a-input-password v-model:value="userForm.password" placeholder="Password" />
           </a-form-item>
           <a-form-item label="Role" name="role">
-            <a-select v-model:value="userForm.role">
+            <a-select v-model:value="userForm.role" :disabled="!isSuperAdmin() && userForm.role === 'admin'">
               <a-select-option value="user">User</a-select-option>
               <a-select-option value="admin">Admin</a-select-option>
             </a-select>
@@ -289,6 +294,17 @@
     userModalVisible.value = true;
   };
   
+  // Super admin identification helpers
+  const isSuperAdmin = (user) => {
+    if (user) {
+      // When checking a specific user
+      return user.id === 'admin';
+    } else {
+      // When checking current user
+      return authService.isSuperAdmin();
+    }
+  };
+  
   // Edit an existing user
   const editUser = (user) => {
     if (isSuperAdmin(user)) {
@@ -297,8 +313,8 @@
     }
     
     // Only super admin can edit other admin accounts
-    if (user.role === 'admin' && !currentUserIsSuperAdmin()) {
-      message.warning("Only the main administrator can modify other admin accounts");
+    if (user.role === 'admin' && !isSuperAdmin()) {
+      message.warning("Only the super administrator can modify other admin accounts");
       return;
     }
     
@@ -331,15 +347,7 @@
         await api.updateUser(userData.id, userData);
         message.success('User updated successfully');
       } else {
-        // For new users, if the role is admin, we should set the permissions accordingly
-        const newUserData = { ...userForm.value };
-        
-        // New admins get automatically created with admin access
-        if (newUserData.role === 'admin' && (!newUserData.permissions || !newUserData.permissions.hosts)) {
-          newUserData.permissions = { hosts: '*' };
-        }
-        
-        await api.createUser(newUserData);
+        await api.createUser(userForm.value);
         message.success('User created successfully');
       }
       
@@ -410,7 +418,7 @@
       emit('refresh');
     } catch (error) {
       console.error('Error updating permissions:', error);
-      message.error('Failed to update permissions');
+      message.error(error.response?.data?.error || 'Failed to update permissions');
     } finally {
       modalLoading.value = false;
     }
@@ -430,8 +438,8 @@
     }
     
     // Only super admin can delete other admin accounts
-    if (user.role === 'admin' && !currentUserIsSuperAdmin()) {
-      message.warning("Only the main administrator can delete other admin accounts");
+    if (user.role === 'admin' && !isSuperAdmin()) {
+      message.warning("Only the super administrator can delete other admin accounts");
       return;
     }
     
@@ -464,19 +472,13 @@
     deleteModalVisible.value = false;
   };
   
-  const SUPER_ADMIN_ID = "admin";
-  
-  const isSuperAdmin = (user) => {
-    return user.id === SUPER_ADMIN_ID;
-  };
-  
-  // Check if the current logged-in user is the super admin
-  const currentUserIsSuperAdmin = () => {
-    return authService.currentUser.value?.id === SUPER_ADMIN_ID;
-  };
-
   // Lifecycle hooks
   onMounted(() => {
+    // If user data exists, refresh to get latest user role/permissions
+    if (authService.isAuthenticated.value) {
+      authService.refreshUserProfile();
+    }
+    
     // Fetch initial data
     fetchUsers();
     fetchHosts();
