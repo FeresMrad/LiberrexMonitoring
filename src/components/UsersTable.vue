@@ -4,7 +4,6 @@
       <a-table 
         :columns="columns" 
         :data-source="users" 
-        :loading="loading"
         rowKey="id"
       >
         <!-- Role Column -->
@@ -140,7 +139,7 @@
   </template>
   
   <script setup>
-  import { ref, computed, onMounted, defineEmits, defineExpose } from 'vue';
+  import { ref, onMounted, defineEmits, defineExpose } from 'vue';
   import { 
     EditOutlined, 
     DeleteOutlined, 
@@ -217,24 +216,31 @@
   
   // Form validation rules
   const userFormRules = {
-    email: [
-      { required: true, message: 'Please input an email address', trigger: 'blur' },
-      { type: 'email', message: 'Please input a valid email address', trigger: 'blur' }
-    ],
-    name: [
-      { required: true, message: 'Please input a name', trigger: 'blur' }
-    ],
-    password: [
-      { 
-        required: computed(() => !editingUser.value), 
-        message: 'Please input a password', 
-        trigger: 'blur' 
-      }
-    ],
-    role: [
-      { required: true, message: 'Please select a role', trigger: 'change' }
-    ]
-  };
+  email: [
+    { required: true, message: 'Please input an email address', trigger: 'blur' },
+    { type: 'email', message: 'Please input a valid email address', trigger: 'blur' }
+  ],
+  name: [
+    { required: true, message: 'Please input a name', trigger: 'blur' }
+  ],
+  password: [
+    { 
+      required: false, // Changed to false by default
+      validator: (rule, value) => {
+        // Only require password in create mode, not in edit mode
+        if (!editingUser.value) {
+          return value ? Promise.resolve() : Promise.reject('Please input a password');
+        }
+        // In edit mode, password is optional
+        return Promise.resolve();
+      },
+      trigger: 'blur' 
+    }
+  ],
+  role: [
+    { required: true, message: 'Please select a role', trigger: 'change' }
+  ]
+};
   
   // Fetch users from API
   const fetchUsers = async () => {
@@ -297,36 +303,36 @@
   
   // Handle user modal OK button
   const handleUserModalOk = async () => {
-    try {
-      await userFormRef.value.validate();
-      
-      modalLoading.value = true;
-      
-      if (editingUser.value) {
-        // If password is empty in edit mode, remove it from the payload
-        const userData = { ...userForm.value };
-        if (!userData.password) {
-          delete userData.password;
-        }
-        
-        await api.updateUser(userData.id, userData);
-        message.success('User updated successfully');
-      } else {
-        await api.createUser(userForm.value);
-        message.success('User created successfully');
+  try {
+    await userFormRef.value.validate();
+    
+    modalLoading.value = true;
+    
+    if (editingUser.value) {
+      // If password is empty in edit mode, remove it from the payload
+      const userData = { ...userForm.value };
+      if (!userData.password) {
+        delete userData.password;
       }
       
-      // Refresh user list
-      fetchUsers();
-      userModalVisible.value = false;
-      emit('refresh');
-    } catch (error) {
-      console.error('Error saving user:', error);
-      message.error(error.response?.data?.error || 'Failed to save user');
-    } finally {
-      modalLoading.value = false;
+      await api.updateUser(userData.id, userData);
+      message.success('User updated successfully');
+    } else {
+      await api.createUser(userForm.value);
+      message.success('User created successfully');
     }
-  };
+    
+    // Refresh user list
+    fetchUsers();
+    userModalVisible.value = false;
+    emit('refresh');
+  } catch (error) {
+    console.error('Error saving user:', error);
+    message.error(error.response?.data?.error || 'Failed to save user');
+  } finally {
+    modalLoading.value = false;
+  }
+};
   
   // Handle user modal cancel
   const handleUserModalCancel = () => {
