@@ -1,6 +1,6 @@
 <template>
   <div> 
-    <a-table :columns="hostsColumns" :data-source="filteredHostsData" :pagination="false">
+    <a-table :columns="visibleColumns" :data-source="filteredHostsData" :pagination="false">
       <template v-slot:bodyCell="{ column, text, record }">
         <template v-if="column.key === 'activity'">
           <span :class="text.isDown ? 'activity down' : 'activity up'">
@@ -67,12 +67,11 @@
           />
         </template>
 
-        <!-- Actions Column -->
+        <!-- Actions Column - Only visible for admins -->
         <template v-if="column.key === 'actions'">
           <div class="action-buttons">
-            <!-- Edit Button - admin only -->
+            <!-- Edit Button -->
             <a-button 
-              v-if="isAdmin"
               type="primary" 
               size="small"
               @click.stop="startEditing(record)"
@@ -81,9 +80,8 @@
               <edit-outlined />
             </a-button>
             
-            <!-- Delete Button - admin only -->
+            <!-- Delete Button -->
             <a-button 
-              v-if="isAdmin"
               type="danger" 
               size="small"
               @click.stop="showDeleteConfirm(record)"
@@ -177,7 +175,8 @@ const filteredHostsData = computed(() => {
   );
 });
 
-const hostsColumns = ref([
+// Define all possible columns
+const allColumns = [
   { title: "Host Name", dataIndex: "name", key: "hostName" },
   { title: "IP Address", dataIndex: "ip", key: "ip" },
   { title: "CPU", dataIndex: "cpuUsage", key: "cpuUsage" },
@@ -191,7 +190,17 @@ const hostsColumns = ref([
     width: 100,
     align: 'center'
   }
-]);
+];
+
+// Computed property to only show the Actions column to admin users
+const visibleColumns = computed(() => {
+  // If not admin, filter out the actions column
+  if (!isAdmin.value) {
+    return allColumns.filter(column => column.key !== 'actions');
+  }
+  // Otherwise, show all columns
+  return allColumns;
+});
 
 const fetchHosts = async () => {
   try {
