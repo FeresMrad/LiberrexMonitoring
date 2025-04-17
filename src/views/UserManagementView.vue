@@ -125,7 +125,7 @@
               <h4>Select Hosts</h4>
               <a-checkbox-group v-model:value="selectedHosts">
                 <div v-for="host in availableHosts" :key="host">
-                  <a-checkbox :value="host">{{ host }}</a-checkbox>
+                  <a-checkbox :value="host">{{ host.displayName }}</a-checkbox>
                 </div>
               </a-checkbox-group>
             </div>
@@ -264,14 +264,18 @@
   
   // Fetch available hosts for permissions
   const fetchHosts = async () => {
-    try {
-      const response = await api.getHosts();
-      availableHosts.value = response.data.map(host => host.name);
-    } catch (error) {
-      console.error('Error fetching hosts:', error);
-      message.error('Failed to load hosts');
-    }
-  };
+  try {
+    const response = await api.getHosts();
+    // Store both host ID and display name (custom name or ID if no custom name)
+    availableHosts.value = response.data.map(host => ({
+      id: host.name,
+      displayName: host.customName || host.name
+    }));
+  } catch (error) {
+    console.error('Error fetching hosts:', error);
+    message.error('Failed to load hosts');
+  }
+};
   
   // User Modal Functions
   const showCreateUserModal = () => {
