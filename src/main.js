@@ -15,6 +15,7 @@ import authService from "./services/auth";
 import websocket from "./services/websocket";
 import api from "./services/api";
 import { message } from 'ant-design-vue';
+import GroupManagementView from "./views/GroupManagementView.vue";
 
 // Authentication guard for protected routes
 const requireAuth = (to, from, next) => {
@@ -123,6 +124,11 @@ const routes = [
   {
     path: "/admin/users",
     component: UserManagementView,
+    beforeEnter: requireAdmin // Use admin guard for this route
+  },
+  {
+    path: "/admin/groups",
+    component: GroupManagementView,
     beforeEnter: requireAdmin // Use admin guard for this route
   },
   // Redirect root to login or dashboard

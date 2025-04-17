@@ -43,13 +43,19 @@
             </a-menu-item>
           </router-link>
           
-          <!-- Admin section - only visible to admin users -->
+          <!-- Admin section with groups link -->
           <template v-if="isAdmin">
             <a-divider style="margin: 8px 0; background-color: rgba(255, 255, 255, 0.2)" />
             <router-link to="/admin/users">
               <a-menu-item key="users">
                 <team-outlined />
                 <span>Users</span>
+              </a-menu-item>
+            </router-link>
+            <router-link to="/admin/groups">
+              <a-menu-item key="groups">
+                <apartment-outlined />
+                <span>Hosts Groups</span>
               </a-menu-item>
             </router-link>
           </template>
@@ -76,7 +82,8 @@ import {
   BellOutlined, 
   LogoutOutlined, 
   MenuOutlined,
-  TeamOutlined 
+  TeamOutlined,
+  ApartmentOutlined 
 } from '@ant-design/icons-vue';
 import authService from '@/services/auth';
 import websocket from '@/services/websocket';

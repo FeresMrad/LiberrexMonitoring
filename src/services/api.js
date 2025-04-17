@@ -218,5 +218,36 @@ updateUserPermissions(userId, permissions) {
 getAccessibleHosts() {
   return apiClient.get('/users/hosts');
 },
-  
+// Group Management Methods
+getGroups() {
+  return apiClient.get('/groups');
+},
+
+getGroup(groupId) {
+  return apiClient.get(`/groups/${groupId}`);
+},
+
+createGroup(groupData) {
+  return apiClient.post('/groups', groupData);
+},
+
+updateGroup(groupId, groupData) {
+  return apiClient.put(`/groups/${groupId}`, groupData);
+},
+
+deleteGroup(groupId) {
+  return apiClient.delete(`/groups/${groupId}`);
+},
+
+addHostToGroup(groupId, hostId) {
+  return apiClient.post(`/groups/${groupId}/hosts/${hostId}`);
+},
+
+removeHostFromGroup(groupId, hostId) {
+  return apiClient.delete(`/groups/${groupId}/hosts/${hostId}`);
+},
+
+getGroupsForHost(hostId) {
+  return apiClient.get(`/groups/hosts/${hostId}`);
+},  
 };
