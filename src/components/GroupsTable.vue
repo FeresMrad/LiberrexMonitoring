@@ -7,23 +7,19 @@
         :loading="loading"
         rowKey="id"
       >
-        <!-- Color Column -->
         <template #bodyCell="{ column, record }">
-          <!-- Color Display -->
-          <template v-if="column.key === 'color'">
-            <div class="color-box" :style="{ backgroundColor: record.color }"></div>
-          </template>
-  
-          <!-- Hosts Column - Show number of hosts and preview -->
+          <!-- Hosts Column - Show host list directly -->
           <template v-if="column.key === 'hosts'">
             <div class="hosts-preview">
-              <a-tag>{{ record.hosts.length }} hosts</a-tag>
-              <div v-if="record.hosts.length > 0" class="host-list-preview">
-                <a-tooltip title="View all hosts">
+              <div v-if="record.hosts.length > 0" class="host-list">
+                <a-tooltip title="Manage hosts">
                   <div class="hosts-summary" @click="showHostsModal(record)">
                     {{ formatHostList(record.hosts) }}
                   </div>
                 </a-tooltip>
+              </div>
+              <div v-else class="no-hosts">
+                No hosts assigned
               </div>
             </div>
           </template>
@@ -126,7 +122,7 @@
   const allHostsDataSource = ref([]);
   const hostTransferLoading = ref(false);
   
-  // Table columns
+  // Table columns - removed color column
   const columns = [
     {
       title: 'Name',
@@ -141,15 +137,10 @@
       ellipsis: true
     },
     {
-      title: 'Color',
-      dataIndex: 'color',
-      key: 'color',
-      width: 80
-    },
-    {
       title: 'Hosts',
       dataIndex: 'hosts',
       key: 'hosts',
+      ellipsis: true,
       sorter: (a, b) => a.hosts.length - b.hosts.length
     },
     {
@@ -192,7 +183,7 @@
     }
   };
   
-  // Format host list for display
+  // Format host list for display - modified to always show all hosts
   const formatHostList = (hostIds) => {
     if (!hostIds || hostIds.length === 0) return 'No hosts';
     
@@ -202,12 +193,8 @@
       return host ? (host.customName || host.name) : id;
     });
     
-    // Show first few hosts with ellipsis if too many
-    if (hostNames.length <= 3) {
-      return hostNames.join(', ');
-    } else {
-      return `${hostNames.slice(0, 2).join(', ')} and ${hostNames.length - 2} more...`;
-    }
+    // Show all hosts directly
+    return hostNames.join(', ');
   };
   
   // Set external edit handler
@@ -333,26 +320,23 @@
     justify-content: center;
   }
   
-  .color-box {
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    border: 1px solid #d9d9d9;
-  }
-  
   .hosts-preview {
     display: flex;
     flex-direction: column;
-    gap: 4px;
   }
   
-  .host-list-preview {
-    font-size: 12px;
-    color: #666;
+  .host-list {
+    max-width: 100%;
+  }
+  
+  .no-hosts {
+    color: #999;
+    font-style: italic;
   }
   
   .hosts-summary {
     cursor: pointer;
+    color: #1890ff;
     text-decoration: underline dotted;
   }
   

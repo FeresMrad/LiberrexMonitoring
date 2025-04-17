@@ -249,5 +249,5 @@ removeHostFromGroup(groupId, hostId) {
 
 getGroupsForHost(hostId) {
   return apiClient.get(`/groups/hosts/${hostId}`);
-},  
+},
 };

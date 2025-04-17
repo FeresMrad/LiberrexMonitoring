@@ -33,7 +33,7 @@
           <!-- Actions Column -->
           <template v-if="column.key === 'actions'">
             <div class="action-buttons">
-              <a-tooltip title="Edit User">
+              <a-tooltip>
                 <a-button 
                   type="default" 
                   size="small" 
@@ -106,7 +106,6 @@
       <!-- Permissions Modal -->
       <a-modal
         v-model:open="permissionsModalVisible"
-        title="Manage User Permissions"
         @ok="handlePermissionsModalOk"
         @cancel="handlePermissionsModalCancel"
         :confirmLoading="modalLoading"
