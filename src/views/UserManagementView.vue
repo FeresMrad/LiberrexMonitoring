@@ -124,8 +124,8 @@
             <div v-if="permissionType === 'specific'" class="host-selection">
               <h4>Select Hosts</h4>
               <a-checkbox-group v-model:value="selectedHosts">
-                <div v-for="host in availableHosts" :key="host">
-                  <a-checkbox :value="host">{{ host.displayName }}</a-checkbox>
+                <div v-for="host in availableHosts" :key="host.id">
+                  <a-checkbox :value="host.id">{{ host.displayName }}</a-checkbox>
                 </div>
               </a-checkbox-group>
             </div>
