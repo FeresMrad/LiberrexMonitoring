@@ -105,54 +105,102 @@
   
       <!-- Permissions Modal -->
       <a-modal
-    v-model:open="permissionsModalVisible"
-    @ok="handlePermissionsModalOk"
-    @cancel="handlePermissionsModalCancel"
-    :confirmLoading="modalLoading"
-  >
-    <div v-if="selectedUser">
-      <h3>Permissions for {{ selectedUser.name }}</h3>
-      
-      <div class="permission-selector">
-        <a-radio-group v-model:value="permissionType" @change="handlePermissionTypeChange">
-          <a-radio value="all">Access All Hosts</a-radio>
-          <a-radio value="specific">Access Specific Hosts</a-radio>
-          <a-radio value="groups">Access by Groups</a-radio>
-          <a-radio value="none">No Host Access</a-radio>
-        </a-radio-group>
-      </div>
-      
-      <!-- Host selection - shown when "specific" is selected -->
-      <div v-if="permissionType === 'specific'" class="host-selection">
-        <h4>Select Hosts</h4>
-        <a-checkbox-group v-model:value="selectedHosts">
-          <div v-for="host in availableHosts" :key="host.id">
-            <a-checkbox :value="host.id">{{ host.displayName }}</a-checkbox>
+        v-model:open="permissionsModalVisible"
+        @ok="handlePermissionsModalOk"
+        @cancel="handlePermissionsModalCancel"
+        :confirmLoading="modalLoading"
+        width="700px"
+      >
+        <div v-if="selectedUser" class="permissions-container">
+          <h3>Permissions for {{ selectedUser.name }}</h3>
+          
+          <!-- Global Access Toggle -->
+          <div class="permission-all-hosts">
+            <a-radio-group v-model:value="permissionType" @change="handlePermissionTypeChange">
+              <a-radio value="all">Access All Hosts</a-radio>
+              <a-radio value="specific">Select Hosts</a-radio>
+              <a-radio value="none">No Access</a-radio>
+            </a-radio-group>
           </div>
-        </a-checkbox-group>
-      </div>
-      
-      <!-- Group selection - NEW: shown when "groups" is selected -->
-      <div v-if="permissionType === 'groups'" class="group-selection">
-        <h4>Select Groups</h4>
-        <a-spin v-if="groupsLoading" />
-        <a-checkbox-group v-else v-model:value="selectedGroups">
-          <div v-for="group in availableGroups" :key="group.id" class="group-item">
-            <a-checkbox :value="group.id">
-              <div class="group-info">
-                <div class="group-name">{{ group.name }}</div>
-                <div class="group-description">{{ group.description }}</div>
-                <div class="host-count">
-                  {{ group.hosts ? group.hosts.length : 0 }} hosts in this group
+          
+          <!-- Host Selection Section - Only show if "specific" is selected -->
+          <div v-if="permissionType === 'specific'" class="host-selection-container">
+            <!-- Tabs for Groups and Hosts -->
+            <a-tabs v-model:activeKey="activeTabKey">
+              <a-tab-pane key="hosts" tab="Hosts">
+                <div class="host-selection">
+                  <a-spin v-if="hostsLoading" />
+                  <template v-else>
+                    <a-input 
+                      v-model:value="hostSearchText" 
+                      placeholder="Search hosts..." 
+                      style="margin-bottom: 10px"
+                      allow-clear
+                    />
+                    
+                    <div class="selection-stats">
+                      <span>{{ selectedHosts.length }} hosts selected</span>
+                      <div class="selection-actions">
+                        <a-button size="small" @click="selectAllHosts">Select All</a-button>
+                        <a-button size="small" @click="deselectAllHosts">Deselect All</a-button>
+                      </div>
+                    </div>
+                    
+                    <a-checkbox-group v-model:value="selectedHosts" class="host-checkbox-group">
+                      <div 
+                        v-for="host in filteredHosts" 
+                        :key="host.id" 
+                        class="host-item"
+                      >
+                        <a-checkbox :value="host.id">
+                          <div class="host-info">
+                            <span class="host-name">{{ host.displayName }}</span>
+                            <span v-if="isHostInSelectedGroup(host.id)" class="host-group-tag">
+                              In selected group
+                            </span>
+                          </div>
+                        </a-checkbox>
+                      </div>
+                    </a-checkbox-group>
+                    <a-empty v-if="filteredHosts.length === 0" description="No hosts found" />
+                  </template>
                 </div>
-              </div>
-            </a-checkbox>
+              </a-tab-pane>
+              
+              <a-tab-pane key="groups" tab="Groups">
+                <div class="group-selection">
+                  <a-spin v-if="groupsLoading" />
+                  <template v-else>
+                    <a-input 
+                      v-model:value="groupSearchText" 
+                      placeholder="Search groups..." 
+                      style="margin-bottom: 10px"
+                      allow-clear
+                    />
+                    
+                    <a-checkbox-group v-model:value="selectedGroups" @change="updateHostsFromGroups" class="group-checkbox-group">
+                      <div 
+                        v-for="group in filteredGroups" 
+                        :key="group.id" 
+                        class="group-item"
+                      >
+                        <a-checkbox :value="group.id">
+                          <div class="group-info">
+                            <div class="group-name">{{ group.name }}</div>
+                            <div class="group-description">{{ group.description }}</div>
+                            <div class="host-count">{{ group.hosts ? group.hosts.length : 0 }} hosts</div>
+                          </div>
+                        </a-checkbox>
+                      </div>
+                    </a-checkbox-group>
+                    <a-empty v-if="filteredGroups.length === 0" description="No groups found" />
+                  </template>
+                </div>
+              </a-tab-pane>
+            </a-tabs>
           </div>
-        </a-checkbox-group>
-        <a-empty v-if="!groupsLoading && availableGroups.length === 0" description="No groups found" />
-      </div>
-    </div>
-  </a-modal>
+        </div>
+      </a-modal>
   
       <!-- Delete Confirmation Modal -->
       <a-modal
@@ -173,7 +221,7 @@
   </template>
   
   <script setup>
-  import { ref, onMounted, defineEmits, defineExpose } from 'vue';
+  import { ref, onMounted, defineEmits, defineExpose, computed, watch } from 'vue';
   import { 
     EditOutlined, 
     DeleteOutlined, 
@@ -208,14 +256,64 @@
   });
   
   // Permission management state
+  const permissionType = ref('none'); // 'all', 'specific', or 'none'
   const availableHosts = ref([]);
   const selectedHosts = ref([]);
-  const permissionType = ref('none');
-
-  // NEW: Group management state
-const availableGroups = ref([]);
-const selectedGroups = ref([]);
-const groupsLoading = ref(false);
+  const hostsLoading = ref(false);
+  const hostSearchText = ref('');
+  
+  // Group management state
+  const availableGroups = ref([]);
+  const selectedGroups = ref([]);
+  const groupsLoading = ref(false);
+  const groupSearchText = ref('');
+  
+  // Group/host mapping
+  const groupToHostsMap = ref({});
+  
+  // Tab selection
+  const activeTabKey = ref('hosts');
+  
+  // Filtered hosts and groups based on search
+  const filteredHosts = computed(() => {
+    if (!hostSearchText.value) {
+      return availableHosts.value;
+    }
+    const searchLower = hostSearchText.value.toLowerCase();
+    return availableHosts.value.filter(host => 
+      host.displayName.toLowerCase().includes(searchLower)
+    );
+  });
+  
+  const filteredGroups = computed(() => {
+    if (!groupSearchText.value) {
+      return availableGroups.value;
+    }
+    const searchLower = groupSearchText.value.toLowerCase();
+    return availableGroups.value.filter(group => 
+      group.name.toLowerCase().includes(searchLower) || 
+      (group.description && group.description.toLowerCase().includes(searchLower))
+    );
+  });
+  
+  // Helper function to check if a host is in any selected group
+  const isHostInSelectedGroup = (hostId) => {
+    for (const groupId of selectedGroups.value) {
+      if (groupToHostsMap.value[groupId]?.includes(hostId)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  
+  // Select/deselect all hosts
+  const selectAllHosts = () => {
+    selectedHosts.value = availableHosts.value.map(host => host.id);
+  };
+  
+  const deselectAllHosts = () => {
+    selectedHosts.value = [];
+  };
   
   // Table columns
   const columns = [
@@ -279,6 +377,40 @@ const groupsLoading = ref(false);
     ]
   };
   
+  // Handle permission type change
+  const handlePermissionTypeChange = (e) => {
+    const value = e.target.value;
+    permissionType.value = value;
+    
+    if (value === 'specific') {
+      // Load hosts and groups if they aren't already loaded
+      if (availableHosts.value.length === 0) {
+        fetchHosts();
+      }
+      if (availableGroups.value.length === 0) {
+        fetchGroups();
+      }
+    }
+  };
+  
+  // Update selected hosts when groups change
+  const updateHostsFromGroups = () => {
+    // Start with hosts that were manually selected
+    let newSelectedHosts = [...selectedHosts.value];
+    
+    // Add hosts from selected groups
+    selectedGroups.value.forEach(groupId => {
+      const groupHosts = groupToHostsMap.value[groupId] || [];
+      groupHosts.forEach(hostId => {
+        if (!newSelectedHosts.includes(hostId)) {
+          newSelectedHosts.push(hostId);
+        }
+      });
+    });
+    
+    selectedHosts.value = newSelectedHosts;
+  };
+  
   // Fetch users from API
   const fetchUsers = async () => {
     loading.value = true;
@@ -295,6 +427,7 @@ const groupsLoading = ref(false);
   
   // Fetch available hosts for permissions
   const fetchHosts = async () => {
+    hostsLoading.value = true;
     try {
       const response = await api.getHosts();
       // Store both host ID and display name (custom name or ID if no custom name)
@@ -305,21 +438,31 @@ const groupsLoading = ref(false);
     } catch (error) {
       console.error('Error fetching hosts:', error);
       message.error('Failed to load hosts');
+    } finally {
+      hostsLoading.value = false;
     }
   };
-
+  
+  // Fetch and process groups
   const fetchGroups = async () => {
-  groupsLoading.value = true;
-  try {
-    const response = await api.getGroups();
-    availableGroups.value = response.data;
-  } catch (error) {
-    console.error('Error fetching groups:', error);
-    message.error('Failed to load host groups');
-  } finally {
-    groupsLoading.value = false;
-  }
-};
+    groupsLoading.value = true;
+    try {
+      const response = await api.getGroups();
+      availableGroups.value = response.data;
+      
+      // Create a mapping of group IDs to host IDs
+      const mapping = {};
+      for (const group of response.data) {
+        mapping[group.id] = group.hosts || [];
+      }
+      groupToHostsMap.value = mapping;
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+      message.error('Failed to load host groups');
+    } finally {
+      groupsLoading.value = false;
+    }
+  };
   
   // Show modal for creating a new user
   const showCreateUserModal = () => {
@@ -408,83 +551,87 @@ const groupsLoading = ref(false);
   };
   
   // Edit permissions for a user
-const editPermissions = (user) => {
-  selectedUser.value = user;
-  
-  // Set initial permission type
-  if (user.permissions?.hosts === '*') {
-    permissionType.value = 'all';
-    selectedHosts.value = [];
-    selectedGroups.value = [];
-  } else if (user.permissions?.groups && user.permissions.groups.length > 0) {
-    permissionType.value = 'groups';
-    selectedGroups.value = [...user.permissions.groups];
-    selectedHosts.value = [];
-  } else if (user.permissions?.hosts?.length > 0) {
-    permissionType.value = 'specific';
-    selectedHosts.value = [...user.permissions.hosts];
-    selectedGroups.value = [];
-  } else {
-    permissionType.value = 'none';
-    selectedHosts.value = [];
-    selectedGroups.value = [];
-  }
-  
-  permissionsModalVisible.value = true;
-  
-  // Ensure data is loaded for the selected permission type
-  if (permissionType.value === 'specific') {
-    fetchHosts();
-  } else if (permissionType.value === 'groups') {
-    fetchGroups();
-  }
-};
-  
-  // Handle permission type change
-  const handlePermissionTypeChange = (e) => {
-  const value = e.target.value;
-  permissionType.value = value;
-  
-  if (value === 'specific' && availableHosts.value.length === 0) {
-    // Load hosts if not already loaded
-    fetchHosts();
-  } else if (value === 'groups' && availableGroups.value.length === 0) {
-    // Load groups if not already loaded
-    fetchGroups();
-  }
-};
-  
-  // Handle permissions modal OK button
-const handlePermissionsModalOk = async () => {
-  modalLoading.value = true;
-  
-  try {
-    let permissions = {};
+  const editPermissions = (user) => {
+    selectedUser.value = user;
     
-    if (permissionType.value === 'all') {
-      permissions = { hosts: '*', groups: [] };
-    } else if (permissionType.value === 'specific') {
-      permissions = { hosts: selectedHosts.value, groups: [] };
-    } else if (permissionType.value === 'groups') {
-      permissions = { hosts: [], groups: selectedGroups.value };
+    // Reset search fields
+    hostSearchText.value = '';
+    groupSearchText.value = '';
+    
+    // Set initial values based on user's current permissions
+    if (user.permissions?.hosts === '*') {
+      permissionType.value = 'all';
+      selectedHosts.value = [];
+      selectedGroups.value = [];
+    } else if (user.permissions?.hosts && user.permissions.hosts.length > 0) {
+      permissionType.value = 'specific';
+      selectedHosts.value = [...user.permissions.hosts];
+      
+      // If we already have the groups data, try to infer which groups are selected
+      if (Object.keys(groupToHostsMap.value).length > 0) {
+        inferSelectedGroups();
+      }
+      
+      // Load hosts and groups data
+      fetchHosts();
+      fetchGroups();
     } else {
-      permissions = { hosts: [], groups: [] };
+      permissionType.value = 'none';
+      selectedHosts.value = [];
+      selectedGroups.value = [];
     }
     
-    await api.updateUserPermissions(selectedUser.value.id, permissions);
-    message.success('Permissions updated successfully');
+    permissionsModalVisible.value = true;
+  };
+  
+  // Infer which groups should be selected based on the selected hosts
+  const inferSelectedGroups = () => {
+    const newSelectedGroups = [];
     
-    // Refresh user list
-    fetchUsers();
-    permissionsModalVisible.value = false;
-    emit('refresh');
-  } catch (error) {
-    console.error('Error updating permissions:', error);
-    message.error(error.response?.data?.error || 'Failed to update permissions');
-  } finally {
-    modalLoading.value = false;
-  }
-};
+    for (const [groupId, hostIds] of Object.entries(groupToHostsMap.value)) {
+      // Check if all hosts in the group are selected
+      const allHostsSelected = hostIds.every(hostId => selectedHosts.value.includes(hostId));
+      if (allHostsSelected && hostIds.length > 0) {
+        newSelectedGroups.push(groupId);
+      }
+    }
+    
+    selectedGroups.value = newSelectedGroups;
+  };
+  
+  // Handle permissions modal OK button
+  const handlePermissionsModalOk = async () => {
+    modalLoading.value = true;
+    
+    try {
+      let permissions = {};
+      
+      if (permissionType.value === 'all') {
+        // All hosts access
+        permissions = { hosts: '*' };
+      } else if (permissionType.value === 'specific') {
+        // Specific hosts - note we only need to save the host IDs
+        // The group info is only used during the selection process
+        permissions = { hosts: selectedHosts.value };
+      } else {
+        // No access
+        permissions = { hosts: [] };
+      }
+      
+      await api.updateUserPermissions(selectedUser.value.id, permissions);
+      message.success('Permissions updated successfully');
+      
+      // Refresh user list
+      fetchUsers();
+      permissionsModalVisible.value = false;
+      emit('refresh');
+    } catch (error) {
+      console.error('Error updating permissions:', error);
+      message.error(error.response?.data?.error || 'Failed to update permissions');
+    } finally {
+      modalLoading.value = false;
+    }
+  };
   
   // Handle permissions modal cancel
   const handlePermissionsModalCancel = () => {
@@ -534,17 +681,21 @@ const handlePermissionsModalOk = async () => {
     deleteModalVisible.value = false;
   };
   
+  // Watch for group selection changes to update hosts
+  watch(selectedGroups, () => {
+    updateHostsFromGroups();
+  });
+  
   // Lifecycle hooks
   onMounted(() => {
-  // If user data exists, refresh to get latest user role/permissions
-  if (authService.isAuthenticated.value) {
-    authService.refreshUserProfile();
-  }
-  
-  // Fetch initial data
-  fetchUsers();
-  // We'll fetch hosts and groups on demand based on permission type
-});
+    // If user data exists, refresh to get latest user role/permissions
+    if (authService.isAuthenticated.value) {
+      authService.refreshUserProfile();
+    }
+    
+    // Fetch initial data
+    fetchUsers();
+  });
   
   // Expose functions for parent component
   defineExpose({
@@ -563,60 +714,96 @@ const handlePermissionsModalOk = async () => {
     gap: 8px;
   }
   
-  .permission-selector {
-    margin-bottom: 20px;
+  /* Permissions modal styling */
+  .permissions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
   
-  .host-selection {
+  .permission-all-hosts {
+    margin-bottom: 16px;
+  }
+  
+  .host-selection-container {
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+    margin-top: 16px;
+  }
+  
+  .host-selection,
+  .group-selection {
+    padding: 16px;
+  }
+  
+  .selection-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #666;
+  }
+  
+  .selection-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .host-checkbox-group,
+  .group-checkbox-group {
+    display: flex;
+    flex-direction: column;
     max-height: 300px;
     overflow-y: auto;
-    border: 1px solid #d9d9d9;
-    border-radius: 4px;
-    padding: 10px;
   }
   
-  .host-selection h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
+  .host-item,
+  .group-item {
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
   }
-
-  .group-selection {
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  padding: 10px;
-  margin-top: 10px;
-}
-
-.group-item {
-  margin-bottom: 8px;
-  padding: 8px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.group-item:hover {
-  background-color: #f0f0f0;
-}
-
-.group-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.group-name {
-  font-weight: bold;
-}
-
-.group-description {
-  font-size: 12px;
-  color: #666;
-}
-
-.host-count {
-  font-size: 12px;
-  color: #888;
-  margin-top: 4px;
-}
-</style>
+  
+  .host-item:hover,
+  .group-item:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .host-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .host-name {
+    margin-right: 8px;
+  }
+  
+  .host-group-tag {
+    font-size: 12px;
+    background-color: #e6f7ff;
+    color: #1890ff;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  
+  .group-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .group-name {
+    font-weight: bold;
+  }
+  
+  .group-description {
+    font-size: 12px;
+    color: #666;
+  }
+  
+  .host-count {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+  }
+  </style>
