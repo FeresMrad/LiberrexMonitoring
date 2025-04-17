@@ -55,7 +55,7 @@
             <router-link to="/admin/groups">
               <a-menu-item key="groups">
                 <apartment-outlined />
-                <span>Hosts Groups</span>
+                <span>Groups</span>
               </a-menu-item>
             </router-link>
           </template>

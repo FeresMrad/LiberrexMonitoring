@@ -19,7 +19,9 @@
                 </a-tooltip>
               </div>
               <div v-else class="no-hosts">
-                No hosts assigned
+                <a-button type="link" @click="showHostsModal(record)">
+                  Add hosts
+                </a-button>
               </div>
             </div>
           </template>
@@ -60,26 +62,54 @@
         </template>
       </a-table>
   
-      <!-- Hosts Management Modal -->
+      <!-- Improved Hosts Management Modal -->
       <a-modal
         v-model:open="hostsModalVisible"
         :title="`Manage Hosts for ${selectedGroup?.name || ''}`"
-        @ok="handleHostsModalOk"
-        @cancel="handleHostsModalCancel"
         :width="700"
         :footer="null"
       >
         <div v-if="selectedGroup" class="hosts-management">
-          <div class="hosts-transfer">
-            <a-transfer
-              v-model:targetKeys="selectedHostKeys"
-              :dataSource="allHostsDataSource"
-              :titles="['Available Hosts', 'Group Hosts']"
-              :render="item => item.title"
-              :disabled="hostTransferLoading"
-              @change="handleTransferChange"
+          <!-- Search input for filtering hosts -->
+          <div class="search-container">
+            <a-input-search
+              v-model:value="hostSearchText"
+              placeholder="Search hosts"
+              style="width: 100%; margin-bottom: 16px"
+              @change="filterHosts"
             />
           </div>
+          
+          <!-- Host selection panel -->
+          <div class="host-selection-panel">
+            <div class="selection-header">
+              <div class="selection-title">Available Hosts</div>
+              <a-button 
+                type="link" 
+                @click="selectAllHosts" 
+                :disabled="filteredHosts.length === 0"
+              >
+                Select All
+              </a-button>
+            </div>
+            
+            <a-spin :spinning="hostsLoading">
+              <div v-if="filteredHosts.length > 0" class="hosts-list-container">
+                <a-checkbox-group v-model:value="selectedHostKeys" class="hosts-list">
+                  <div v-for="host in filteredHosts" :key="host.key" class="host-item">
+                    <a-checkbox :value="host.key">
+                      <div class="host-info">
+                        <div class="host-name">{{ host.title }}</div>
+                        <div class="host-ip">{{ host.description }}</div>
+                      </div>
+                    </a-checkbox>
+                  </div>
+                </a-checkbox-group>
+              </div>
+              <a-empty v-else description="No hosts found" />
+            </a-spin>
+          </div>
+          
           <div class="hosts-modal-footer">
             <a-button @click="handleHostsModalCancel">Cancel</a-button>
             <a-button 
@@ -104,8 +134,7 @@
   } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
   import api from '@/services/api';
-  
-  
+    
   // Table data
   const groups = ref([]);
   const loading = ref(true);
@@ -121,8 +150,13 @@
   const selectedHostKeys = ref([]);
   const allHostsDataSource = ref([]);
   const hostTransferLoading = ref(false);
+  const hostsLoading = ref(false);
   
-  // Table columns - removed color column
+  // Search state
+  const hostSearchText = ref('');
+  const filteredHosts = ref([]);
+  
+  // Table columns
   const columns = [
     {
       title: 'Name',
@@ -167,23 +201,29 @@
   
   // Fetch all hosts for host management
   const fetchHosts = async () => {
+    hostsLoading.value = true;
     try {
       const response = await api.getHosts();
       allHosts.value = response.data;
       
-      // Format hosts for the transfer component
+      // Format hosts for the component
       allHostsDataSource.value = allHosts.value.map(host => ({
         key: host.name,
         title: host.customName || host.name,
-        description: host.ip
+        description: host.ip || 'No IP'
       }));
+      
+      // Initialize filtered hosts
+      filterHosts();
     } catch (error) {
       console.error('Error fetching hosts:', error);
       message.error('Failed to load hosts');
+    } finally {
+      hostsLoading.value = false;
     }
   };
   
-  // Format host list for display - modified to always show all hosts
+  // Format host list for display
   const formatHostList = (hostIds) => {
     if (!hostIds || hostIds.length === 0) return 'No hosts';
     
@@ -231,14 +271,46 @@
     selectedGroup.value = group;
     selectedHostKeys.value = [...group.hosts];
     hostsModalVisible.value = true;
+    hostSearchText.value = '';
     
     // Ensure hosts are loaded
     fetchHosts();
   };
   
-  // Handle host transfer change
-  const handleTransferChange = (nextTargetKeys) => {
-    selectedHostKeys.value = nextTargetKeys;
+  // Filter hosts based on search text
+  const filterHosts = () => {
+    if (!hostSearchText.value) {
+      filteredHosts.value = [...allHostsDataSource.value];
+      return;
+    }
+    
+    const searchLower = hostSearchText.value.toLowerCase();
+    filteredHosts.value = allHostsDataSource.value.filter(host => 
+      host.title.toLowerCase().includes(searchLower) || 
+      host.description.toLowerCase().includes(searchLower)
+    );
+  };
+  
+  // Select all visible hosts
+  const selectAllHosts = () => {
+    // Get keys of all currently filtered hosts
+    const allFilteredKeys = filteredHosts.value.map(host => host.key);
+    
+    // If all filtered hosts are already selected, deselect them
+    const allFilteredAreSelected = allFilteredKeys.every(key => 
+      selectedHostKeys.value.includes(key)
+    );
+    
+    if (allFilteredAreSelected) {
+      // Remove all filtered hosts from selection
+      selectedHostKeys.value = selectedHostKeys.value.filter(key => 
+        !allFilteredKeys.includes(key)
+      );
+    } else {
+      // Add all filtered hosts to selection (avoiding duplicates)
+      const newSelection = new Set([...selectedHostKeys.value, ...allFilteredKeys]);
+      selectedHostKeys.value = Array.from(newSelection);
+    }
   };
   
   // Handle hosts modal OK button
@@ -293,6 +365,7 @@
     hostsModalVisible.value = false;
     selectedGroup.value = null;
     selectedHostKeys.value = [];
+    hostSearchText.value = '';
   };
   
   // Lifecycle hooks
@@ -340,8 +413,64 @@
     text-decoration: underline dotted;
   }
   
-  .hosts-transfer {
-    margin-bottom: 20px;
+  /* Host selection styles */
+  .host-selection-panel {
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background-color: #fafafa;
+  }
+  
+  .selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .selection-title {
+    font-weight: bold;
+    color: rgba(0, 0, 0, 0.85);
+  }
+  
+  .hosts-list-container {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .hosts-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .host-item {
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+  }
+  
+  .host-item:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .host-info {
+    display: flex;
+    flex-direction: column;
+    margin-left: 4px;
+  }
+  
+  .host-name {
+    font-weight: 500;
+  }
+  
+  .host-ip {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
   }
   
   .hosts-modal-footer {
