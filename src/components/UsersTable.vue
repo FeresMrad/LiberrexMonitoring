@@ -14,9 +14,12 @@
             </a-tag>
           </template>
   
-          <!-- Permissions Column -->
+          <!-- Permissions Column - FIXED to consider admin role -->
           <template v-if="column.key === 'permissions'">
-            <div v-if="record.permissions?.hosts === '*'">
+            <div v-if="record.role === 'admin'">
+              <a-tag color="red">Admin Access</a-tag>
+            </div>
+            <div v-else-if="record.permissions?.hosts === '*'">
               <a-tag color="green">All Hosts</a-tag>
             </div>
             <div v-else-if="record.permissions?.hosts?.length > 0">
@@ -31,12 +34,17 @@
           <template v-if="column.key === 'actions'">
             <div class="action-buttons">
               <a-tooltip title="Edit User">
-                <a-button type="default" size="small" @click="editUser(record)" :disabled="isSuperAdmin(record)">
+                <a-button 
+                  type="default" 
+                  size="small" 
+                  @click="editUser(record)" 
+                  :disabled="isSuperAdmin(record) || (record.role === 'admin' && !currentUserIsSuperAdmin())"
+                >
                   <template #icon><EditOutlined /></template>
                 </a-button>
               </a-tooltip>
               <a-tooltip title="Manage Permissions">
-                <a-button type="default" size="small" @click="editPermissions(record)" :disabled="isSuperAdmin(record)">
+                <a-button type="default" size="small" @click="editPermissions(record)" :disabled="isSuperAdmin(record) || record.role === 'admin'">
                   <template #icon><KeyOutlined /></template>
                 </a-button>
               </a-tooltip>
@@ -45,7 +53,7 @@
                   type="default" 
                   size="small" 
                   @click="confirmDeleteUser(record)"
-                  :disabled="isSuperAdmin(record)" 
+                  :disabled="isSuperAdmin(record) || (record.role === 'admin' && !currentUserIsSuperAdmin())" 
                 >
                   <template #icon><DeleteOutlined /></template>
                 </a-button>
@@ -147,12 +155,10 @@
   } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
   import api from '@/services/api';
+  import authService from '@/services/auth';
   
   // Event emits
   const emit = defineEmits(['refresh']);
-  
-  // Current user
-  //const currentUser = computed(() => authService.currentUser.value);
   
   // User list state
   const users = ref([]);
@@ -216,31 +222,31 @@
   
   // Form validation rules
   const userFormRules = {
-  email: [
-    { required: true, message: 'Please input an email address', trigger: 'blur' },
-    { type: 'email', message: 'Please input a valid email address', trigger: 'blur' }
-  ],
-  name: [
-    { required: true, message: 'Please input a name', trigger: 'blur' }
-  ],
-  password: [
-    { 
-      required: false, // Changed to false by default
-      validator: (rule, value) => {
-        // Only require password in create mode, not in edit mode
-        if (!editingUser.value) {
-          return value ? Promise.resolve() : Promise.reject('Please input a password');
-        }
-        // In edit mode, password is optional
-        return Promise.resolve();
-      },
-      trigger: 'blur' 
-    }
-  ],
-  role: [
-    { required: true, message: 'Please select a role', trigger: 'change' }
-  ]
-};
+    email: [
+      { required: true, message: 'Please input an email address', trigger: 'blur' },
+      { type: 'email', message: 'Please input a valid email address', trigger: 'blur' }
+    ],
+    name: [
+      { required: true, message: 'Please input a name', trigger: 'blur' }
+    ],
+    password: [
+      { 
+        required: false,
+        validator: (rule, value) => {
+          // Only require password in create mode, not in edit mode
+          if (!editingUser.value) {
+            return value ? Promise.resolve() : Promise.reject('Please input a password');
+          }
+          // In edit mode, password is optional
+          return Promise.resolve();
+        },
+        trigger: 'blur' 
+      }
+    ],
+    role: [
+      { required: true, message: 'Please select a role', trigger: 'change' }
+    ]
+  };
   
   // Fetch users from API
   const fetchUsers = async () => {
@@ -258,18 +264,18 @@
   
   // Fetch available hosts for permissions
   const fetchHosts = async () => {
-  try {
-    const response = await api.getHosts();
-    // Store both host ID and display name (custom name or ID if no custom name)
-    availableHosts.value = response.data.map(host => ({
-      id: host.name,
-      displayName: host.customName || host.name
-    }));
-  } catch (error) {
-    console.error('Error fetching hosts:', error);
-    message.error('Failed to load hosts');
-  }
-};
+    try {
+      const response = await api.getHosts();
+      // Store both host ID and display name (custom name or ID if no custom name)
+      availableHosts.value = response.data.map(host => ({
+        id: host.name,
+        displayName: host.customName || host.name
+      }));
+    } catch (error) {
+      console.error('Error fetching hosts:', error);
+      message.error('Failed to load hosts');
+    }
+  };
   
   // Show modal for creating a new user
   const showCreateUserModal = () => {
@@ -286,9 +292,16 @@
   // Edit an existing user
   const editUser = (user) => {
     if (isSuperAdmin(user)) {
-    message.warning("The system administrator account cannot be modified");
-    return;
-  }
+      message.warning("The system administrator account cannot be modified");
+      return;
+    }
+    
+    // Only super admin can edit other admin accounts
+    if (user.role === 'admin' && !currentUserIsSuperAdmin()) {
+      message.warning("Only the main administrator can modify other admin accounts");
+      return;
+    }
+    
     editingUser.value = true;
     selectedUser.value = user;
     userForm.value = {
@@ -303,36 +316,44 @@
   
   // Handle user modal OK button
   const handleUserModalOk = async () => {
-  try {
-    await userFormRef.value.validate();
-    
-    modalLoading.value = true;
-    
-    if (editingUser.value) {
-      // If password is empty in edit mode, remove it from the payload
-      const userData = { ...userForm.value };
-      if (!userData.password) {
-        delete userData.password;
+    try {
+      await userFormRef.value.validate();
+      
+      modalLoading.value = true;
+      
+      if (editingUser.value) {
+        // If password is empty in edit mode, remove it from the payload
+        const userData = { ...userForm.value };
+        if (!userData.password) {
+          delete userData.password;
+        }
+        
+        await api.updateUser(userData.id, userData);
+        message.success('User updated successfully');
+      } else {
+        // For new users, if the role is admin, we should set the permissions accordingly
+        const newUserData = { ...userForm.value };
+        
+        // New admins get automatically created with admin access
+        if (newUserData.role === 'admin' && (!newUserData.permissions || !newUserData.permissions.hosts)) {
+          newUserData.permissions = { hosts: '*' };
+        }
+        
+        await api.createUser(newUserData);
+        message.success('User created successfully');
       }
       
-      await api.updateUser(userData.id, userData);
-      message.success('User updated successfully');
-    } else {
-      await api.createUser(userForm.value);
-      message.success('User created successfully');
+      // Refresh user list
+      fetchUsers();
+      userModalVisible.value = false;
+      emit('refresh');
+    } catch (error) {
+      console.error('Error saving user:', error);
+      message.error(error.response?.data?.error || 'Failed to save user');
+    } finally {
+      modalLoading.value = false;
     }
-    
-    // Refresh user list
-    fetchUsers();
-    userModalVisible.value = false;
-    emit('refresh');
-  } catch (error) {
-    console.error('Error saving user:', error);
-    message.error(error.response?.data?.error || 'Failed to save user');
-  } finally {
-    modalLoading.value = false;
-  }
-};
+  };
   
   // Handle user modal cancel
   const handleUserModalCancel = () => {
@@ -402,6 +423,18 @@
   
   // Confirm deleting a user
   const confirmDeleteUser = (user) => {
+    // Super admin account cannot be deleted
+    if (isSuperAdmin(user)) {
+      message.warning("The system administrator account cannot be deleted");
+      return;
+    }
+    
+    // Only super admin can delete other admin accounts
+    if (user.role === 'admin' && !currentUserIsSuperAdmin()) {
+      message.warning("Only the main administrator can delete other admin accounts");
+      return;
+    }
+    
     selectedUser.value = user;
     deleteModalVisible.value = true;
   };
@@ -430,10 +463,17 @@
   const handleDeleteModalCancel = () => {
     deleteModalVisible.value = false;
   };
+  
   const SUPER_ADMIN_ID = "admin";
+  
   const isSuperAdmin = (user) => {
-  return user.id === SUPER_ADMIN_ID;
-};
+    return user.id === SUPER_ADMIN_ID;
+  };
+  
+  // Check if the current logged-in user is the super admin
+  const currentUserIsSuperAdmin = () => {
+    return authService.currentUser.value?.id === SUPER_ADMIN_ID;
+  };
 
   // Lifecycle hooks
   onMounted(() => {
