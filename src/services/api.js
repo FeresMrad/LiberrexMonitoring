@@ -271,4 +271,10 @@ getApacheBprMetrics(host, timeRange = null) {
   params = formatTimeRangeParams(params, timeRange);
   return apiClient.get('/apache/bpr', { params });
 },
+
+getApacheBpsMetrics(host, timeRange = null) {
+  let params = { host };
+  params = formatTimeRangeParams(params, timeRange);
+  return apiClient.get('/apache/bps', { params });
+},
 };
