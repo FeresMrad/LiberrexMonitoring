@@ -277,4 +277,10 @@ getApacheBpsMetrics(host, timeRange = null) {
   params = formatTimeRangeParams(params, timeRange);
   return apiClient.get('/apache/bps', { params });
 },
+
+getApacheDprMetrics(host, timeRange = null) {
+  let params = { host };
+  params = formatTimeRangeParams(params, timeRange);
+  return apiClient.get('/apache/dpr', { params });
+},
 };
