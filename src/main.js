@@ -16,6 +16,7 @@ import websocket from "./services/websocket";
 import api from "./services/api";
 import { message } from 'ant-design-vue';
 import GroupManagementView from "./views/GroupManagementView.vue";
+import ApacheDetailsView from "./views/ApacheDetailsView.vue";
 
 // Authentication guard for protected routes
 const requireAuth = (to, from, next) => {
@@ -119,6 +120,11 @@ const routes = [
   { 
     path: "/entities/:host/sshdetails", 
     component: SshDetailsView,
+    beforeEnter: requireHostAccess
+  },
+  { 
+    path: "/entities/:host/apachedetails", 
+    component: ApacheDetailsView,
     beforeEnter: requireHostAccess
   },
   {

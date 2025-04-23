@@ -25,8 +25,12 @@
           <td>{{ uptime }}</td>
         </tr>
         <tr>
-          <td>SSH Service</td>
+          <td>SSH</td>
           <td><router-link :to="`/entities/${props.host}/sshdetails`">Details</router-link></td>
+        </tr>
+        <tr>
+          <td>Apache</td>
+          <td><router-link :to="`/entities/${props.host}/apachedetails`">Details</router-link></td>
         </tr>
         <tr>
           <td>Agent ID</td>
