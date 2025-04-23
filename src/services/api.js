@@ -265,4 +265,10 @@ getApacheRpsMetrics(host, timeRange = null) {
 getApacheStatus(host) {
   return apiClient.get('/apache/status', { params: { host } });
 },
+
+getApacheBprMetrics(host, timeRange = null) {
+  let params = { host };
+  params = formatTimeRangeParams(params, timeRange);
+  return apiClient.get('/apache/bpr', { params });
+},
 };
