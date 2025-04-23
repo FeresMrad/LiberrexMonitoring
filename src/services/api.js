@@ -254,4 +254,15 @@ removeHostFromGroup(groupId, hostId) {
 getGroupsForHost(hostId) {
   return apiClient.get(`/groups/hosts/${hostId}`);
 },
+
+// Apache metrics methods
+getApacheRpsMetrics(host, timeRange = null) {
+  let params = { host };
+  params = formatTimeRangeParams(params, timeRange);
+  return apiClient.get('/apache/rps', { params });
+},
+
+getApacheStatus(host) {
+  return apiClient.get('/apache/status', { params: { host } });
+},
 };
