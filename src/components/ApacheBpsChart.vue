@@ -18,13 +18,22 @@
           plugins: {
             title: {
               display: true,
-              text: 'KBytes Per Second',
+              text: 'Bytes Per Second',
               font: {
                 size: 18,
                 weight: 'bold'
               },
               padding: {
                 bottom: 10
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.dataset.label || '';
+                  const value = context.parsed.y;
+                  return `${label}: ${value !== null ? value.toFixed(2) : 'N/A'}`;
+                }
               }
             }
           }
@@ -47,8 +56,16 @@
     host: {
       type: String,
       required: true
+    },
+    ewmaAlpha: {
+      type: Number,
+      default: 0.3
     }
   })
+  
+  // Raw data storage for EWMA calculations
+  const rawIntervalData = ref([]);
+  const rawTimeLabels = ref([]);
   
   const chartData = shallowRef({
     labels: [],
@@ -56,18 +73,20 @@
       {
         label: 'Average',
         data: [],
-        fill: false,
+        fill: true,
         borderColor: 'rgba(75,192,192,1)',
         backgroundColor: 'rgba(75,192,192,0.2)',
         pointRadius: 0,
+        borderWidth: 2,
         tension: 0.1
       },
       {
         label: 'Live',
         data: [],
-        fill: false,
+        fill: true,
         borderColor: 'rgba(255,99,132,1)',
         backgroundColor: 'rgba(255,99,132,0.2)',
+        borderWidth: 2,
         pointRadius: 0,
         tension: 0.1
       }
@@ -76,6 +95,31 @@
   
   const loaded = ref(false)
   const pendingUpdates = ref({})  // Store pending updates by timestamp
+  
+  /**
+   * Calculate Exponentially Weighted Moving Average
+   * @param {Array} data - Array of data points
+   * @param {Number} alpha - Smoothing factor between 0 and 1
+   * @returns {Array} - Array of EWMA values
+   */
+  const calculateEWMA = (data, alpha) => {
+    if (!data.length) return [];
+    
+    const result = [data[0]]; // Start with first value
+    
+    for (let i = 1; i < data.length; i++) {
+      // Only calculate if we have a non-null value
+      if (data[i] !== null && data[i] !== undefined) {
+        const newValue = alpha * data[i] + (1 - alpha) * result[i-1];
+        result.push(newValue);
+      } else {
+        // If null value, just carry forward previous EWMA
+        result.push(result[i-1]);
+      }
+    }
+    
+    return result;
+  };
   
   const formatDate = (timestamp) => {
     let date;
@@ -104,33 +148,43 @@
   }
   
   /**
-   * Fetch Apache BPS (Bytes Per Second) data based on the given time range.
+   * Fetch Apache BPS data based on the given time range.
    * Uses the passed host prop in the query.
    */
   const fetchData = async (timeRange = null) => {
     try {
       const response = await api.getApacheBpsMetrics(props.host, timeRange)
       
+      // Store raw data for EWMA calculation
+      rawTimeLabels.value = response.data.map(item => formatDate(item.time));
+      rawIntervalData.value = response.data.map(item => item.interval_bytes_per_sec);
+      
+      // Calculate EWMA from the interval data
+      const ewmaData = calculateEWMA(
+        response.data.map(item => item.interval_bytes_per_sec), 
+        props.ewmaAlpha
+      );
+      
       chartData.value = {
-        labels: response.data.map(item => formatDate(item.time)),
+        labels: rawTimeLabels.value,
         datasets: [
           {
             ...chartData.value.datasets[0],
-            data: response.data.map(item => item.bytes_per_sec / 1024)
+            data: ewmaData
           },
           {
             ...chartData.value.datasets[1],
-            data: response.data.map(item => item.interval_bytes_per_sec / 1024)
+            data: response.data.map(item => item.interval_bytes_per_sec)
           }
         ]
       }
-      loaded.value = true
+      loaded.value = true;
     } catch (error) {
       console.error(`Error fetching data (${timeRange || 'All Time'}):`, error)
     }
   }
   
-  // Main WebSocket handler for both measurement types
+  // Main WebSocket handler for metric updates
   const handleMetricUpdate = (data) => {
     // Only process events for this host
     if (data.host !== props.host) return;
@@ -144,99 +198,120 @@
         time: timeLabel,
         rawProcessed: false,
         intervalProcessed: false,
-        reqPerSec: null,
-        intervalReqPerSec: null
+        bytesPerSec: null,
+        intervalBytesPerSec: null
       };
     }
     
     // Update the pending update based on measurement type
     if (data.measurement === 'apache_raw' && data.fields.bytes_per_sec !== undefined) {
-      pendingUpdates.value[timeLabel].reqPerSec = data.fields.bytes_per_sec / 1024;
+      pendingUpdates.value[timeLabel].bytesPerSec = data.fields.bytes_per_sec;
       pendingUpdates.value[timeLabel].rawProcessed = true;
     } 
     else if (data.measurement === 'apache_interval' && data.fields.interval_bytes_per_sec !== undefined) {
-      pendingUpdates.value[timeLabel].intervalReqPerSec = data.fields.interval_bytes_per_sec / 1024;
+      pendingUpdates.value[timeLabel].intervalBytesPerSec = data.fields.interval_bytes_per_sec;
       pendingUpdates.value[timeLabel].intervalProcessed = true;
+      
+      // Since we got interval data, process the update (we no longer need to wait for raw data)
+      processUpdate(timeLabel);
     }
-    
-    // Process the update if we've received both measurements or after a short delay
-    // to handle cases where only one measurement type comes in
-    processUpdate(timeLabel);
   };
   
   // Process the pending update for a timestamp
   const processUpdate = (timeLabel) => {
-    // Get current state
-    const currentLabels = [...chartData.value.labels];
-    const currentDatasets = [...chartData.value.datasets];
+    // Get the pending update
     const pendingUpdate = pendingUpdates.value[timeLabel];
     
-    // Skip if we've already processed this update or it doesn't exist
-    if (!pendingUpdate) return;
+    // Skip if it doesn't exist or doesn't have interval data
+    if (!pendingUpdate || pendingUpdate.intervalBytesPerSec === null) return;
+    
+    // Get current state as mutable copies
+    const currentLabels = [...chartData.value.labels];
+    const currentDatasets = [...chartData.value.datasets];
     
     // Check if the timestamp already exists in our chart
     const timeIndex = currentLabels.indexOf(timeLabel);
     
     if (timeIndex === -1) {
-      // New timestamp - add to labels
+      // New timestamp - append to data
       currentLabels.push(timeLabel);
       
-      // Update datasets with the new values
-      // For dataset 0 (Average - bytes_per_sec)
+      // Update the raw data arrays used for EWMA
+      rawTimeLabels.value.push(timeLabel);
+      rawIntervalData.value.push(pendingUpdate.intervalBytesPerSec);
+      
+      // Recalculate EWMA with updated data
+      const ewmaData = calculateEWMA(rawIntervalData.value, props.ewmaAlpha);
+      
+      // Update datasets
       currentDatasets[0] = {
         ...currentDatasets[0],
-        data: [...currentDatasets[0].data, pendingUpdate.reqPerSec / 1024]
+        data: ewmaData
       };
       
-      // For dataset 1 (Live - interval_bytes_per_sec)
       currentDatasets[1] = {
         ...currentDatasets[1],
-        data: [...currentDatasets[1].data, pendingUpdate.intervalReqPerSec / 1024]
-      };
-      
-      // Update the chart
-      chartData.value = {
-        labels: currentLabels,
-        datasets: currentDatasets
+        data: [...currentDatasets[1].data, pendingUpdate.intervalBytesPerSec]
       };
     } else {
       // Existing timestamp - update values at the specific index
-      if (pendingUpdate.rawProcessed) {
-        const newData0 = [...currentDatasets[0].data];
-        newData0[timeIndex] = pendingUpdate.reqPerSec;
+      if (pendingUpdate.intervalProcessed) {
+        // Update raw interval data for recalculation
+        rawIntervalData.value[timeIndex] = pendingUpdate.intervalBytesPerSec;
+        
+        // Recalculate EWMA
+        const ewmaData = calculateEWMA(rawIntervalData.value, props.ewmaAlpha);
+        
+        // Update datasets
         currentDatasets[0] = {
           ...currentDatasets[0],
-          data: newData0
+          data: ewmaData
         };
-      }
-      
-      if (pendingUpdate.intervalProcessed) {
+        
+        // Update live data
         const newData1 = [...currentDatasets[1].data];
-        newData1[timeIndex] = pendingUpdate.intervalReqPerSec;
+        newData1[timeIndex] = pendingUpdate.intervalBytesPerSec;
         currentDatasets[1] = {
           ...currentDatasets[1],
           data: newData1
         };
       }
-      
-      // Update the chart
-      chartData.value = {
-        labels: currentLabels,
-        datasets: currentDatasets
-      };
     }
     
-    // Once we've processed both or waited long enough, clean up
-    if (pendingUpdate.rawProcessed && pendingUpdate.intervalProcessed) {
-      delete pendingUpdates.value[timeLabel];
-    } else {
-      // Set a timeout to process anyway after a short delay in case one measurement doesn't arrive
-      setTimeout(() => {
-        if (pendingUpdates.value[timeLabel]) {
-          processUpdate(timeLabel);
-          delete pendingUpdates.value[timeLabel];
-        }
-      }, 2000); // 2 second grace period
+    // Update the chart
+    chartData.value = {
+      labels: currentLabels,
+      datasets: currentDatasets
+    };
+    
+    // Clean up processed updates
+    delete pendingUpdates.value[timeLabel];
+  };
+  
+  // Keep chart limited to a reasonable number of points
+  const limitChartSize = () => {
+    // If we have more than 300 points, truncate to keep performance reasonable
+    const maxPoints = 300;
+    
+    if (rawTimeLabels.value.length > maxPoints) {
+      const excess = rawTimeLabels.value.length - maxPoints;
+      rawTimeLabels.value = rawTimeLabels.value.slice(excess);
+      rawIntervalData.value = rawIntervalData.value.slice(excess);
+      
+      // Update chart data too
+      chartData.value = {
+        labels: rawTimeLabels.value,
+        datasets: [
+          {
+            ...chartData.value.datasets[0],
+            data: calculateEWMA(rawIntervalData.value, props.ewmaAlpha)
+          },
+          {
+            ...chartData.value.datasets[1],
+            data: rawIntervalData.value
+          }
+        ]
+      };
     }
   };
   
@@ -248,12 +323,21 @@
     websocket.connect()
     websocket.subscribeToHost(props.host)
     websocket.addEventListener('metric_update', handleMetricUpdate)
+    
+    // Set up interval to limit chart size every 5 minutes
+    const limiterInterval = setInterval(limitChartSize, 5 * 60 * 1000);
+    
+    // Clean up interval on component unmount
+    onUnmounted(() => {
+      clearInterval(limiterInterval);
+    });
   })
   
   onUnmounted(() => {
     // Cleanup WebSocket listeners and subscriptions
     websocket.removeEventListener('metric_update', handleMetricUpdate)
     websocket.unsubscribeFromHost(props.host)
+    
     // Clear any pending updates
     pendingUpdates.value = {}
   })
