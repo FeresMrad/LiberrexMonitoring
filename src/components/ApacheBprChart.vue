@@ -75,6 +75,7 @@
   })
   
   const loaded = ref(false)
+  const pendingUpdates = ref({})  // Store pending updates by timestamp
   
   const formatDate = (timestamp) => {
     let date;
@@ -129,62 +130,115 @@
     }
   }
   
-  // Handler for WebSocket updates
+  // Main WebSocket handler for both measurement types
   const handleMetricUpdate = (data) => {
-    if ((data.measurement === 'apache_raw' || data.measurement === 'apache_interval') && data.host === props.host) {
-      // Get the current labels and data sets
-      const currentLabels = [...chartData.value.labels];
-      const currentDatasets = [...chartData.value.datasets];
+    // Only process events for this host
+    if (data.host !== props.host) return;
+    
+    // Get formatted timestamp
+    const timeLabel = formatDate(data.time);
+    
+    // Initialize pending update for this timestamp if it doesn't exist
+    if (!pendingUpdates.value[timeLabel]) {
+      pendingUpdates.value[timeLabel] = {
+        time: timeLabel,
+        rawProcessed: false,
+        intervalProcessed: false,
+        reqPerSec: null,
+        intervalReqPerSec: null
+      };
+    }
+    
+    // Update the pending update based on measurement type
+    if (data.measurement === 'apache_raw' && data.fields.bytes_per_req !== undefined) {
+      pendingUpdates.value[timeLabel].reqPerSec = data.fields.bytes_per_req;
+      pendingUpdates.value[timeLabel].rawProcessed = true;
+    } 
+    else if (data.measurement === 'apache_interval' && data.fields.interval_bytes_per_req !== undefined) {
+      pendingUpdates.value[timeLabel].intervalReqPerSec = data.fields.interval_bytes_per_req;
+      pendingUpdates.value[timeLabel].intervalProcessed = true;
+    }
+    
+    // Process the update if we've received both measurements or after a short delay
+    // to handle cases where only one measurement type comes in
+    processUpdate(timeLabel);
+  };
+  
+  // Process the pending update for a timestamp
+  const processUpdate = (timeLabel) => {
+    // Get current state
+    const currentLabels = [...chartData.value.labels];
+    const currentDatasets = [...chartData.value.datasets];
+    const pendingUpdate = pendingUpdates.value[timeLabel];
+    
+    // Skip if we've already processed this update or it doesn't exist
+    if (!pendingUpdate) return;
+    
+    // Check if the timestamp already exists in our chart
+    const timeIndex = currentLabels.indexOf(timeLabel);
+    
+    if (timeIndex === -1) {
+      // New timestamp - add to labels
+      currentLabels.push(timeLabel);
       
-      // Format the timestamp
-      const timeLabel = formatDate(data.time);
+      // Update datasets with the new values
+      // For dataset 0 (Average - bytes_per_req)
+      currentDatasets[0] = {
+        ...currentDatasets[0],
+        data: [...currentDatasets[0].data, pendingUpdate.reqPerSec / 1024]
+      };
       
-      // Check if we need to add a new timestamp or update an existing one
-      const timeIndex = currentLabels.indexOf(timeLabel);
+      // For dataset 1 (Live - interval_bytes_per_req)
+      currentDatasets[1] = {
+        ...currentDatasets[1],
+        data: [...currentDatasets[1].data, pendingUpdate.intervalReqPerSec / 1024]
+      };
       
-      if (timeIndex === -1) {
-        // Add a new timestamp
-        currentLabels.push(timeLabel);
-        
-        // Check which measurement we received and update the appropriate dataset
-        if (data.measurement === 'apache_raw' && data.fields.bytes_per_req !== undefined) {
-          // For bytes_per_req, update dataset 0
-          currentDatasets[0] = {
-            ...currentDatasets[0],
-            data: [...currentDatasets[0].data, data.fields.bytes_per_req]
-          };
-          
-          // Add a placeholder for dataset 1 if needed
-          if (currentDatasets[1].data.length < currentLabels.length - 1) {
-            currentDatasets[1] = {
-              ...currentDatasets[1],
-              data: [...currentDatasets[1].data, null]
-            };
-          }
-        } else if (data.measurement === 'apache_interval' && data.fields.interval_bytes_per_req !== undefined) {
-          // For interval_bytes_per_req, update dataset 1
-          currentDatasets[1] = {
-            ...currentDatasets[1],
-            data: [...currentDatasets[1].data, data.fields.interval_bytes_per_req]
-          };
-          
-          // Add a placeholder for dataset 0 if needed
-          if (currentDatasets[0].data.length < currentLabels.length - 1) {
-            currentDatasets[0] = {
-              ...currentDatasets[0],
-              data: [...currentDatasets[0].data, null]
-            };
-          }
-        }
-        
-        // Update the chart data
-        chartData.value = {
-          labels: currentLabels,
-          datasets: currentDatasets
+      // Update the chart
+      chartData.value = {
+        labels: currentLabels,
+        datasets: currentDatasets
+      };
+    } else {
+      // Existing timestamp - update values at the specific index
+      if (pendingUpdate.rawProcessed) {
+        const newData0 = [...currentDatasets[0].data];
+        newData0[timeIndex] = pendingUpdate.reqPerSec;
+        currentDatasets[0] = {
+          ...currentDatasets[0],
+          data: newData0
         };
       }
+      
+      if (pendingUpdate.intervalProcessed) {
+        const newData1 = [...currentDatasets[1].data];
+        newData1[timeIndex] = pendingUpdate.intervalReqPerSec;
+        currentDatasets[1] = {
+          ...currentDatasets[1],
+          data: newData1
+        };
+      }
+      
+      // Update the chart
+      chartData.value = {
+        labels: currentLabels,
+        datasets: currentDatasets
+      };
     }
-  }
+    
+    // Once we've processed both or waited long enough, clean up
+    if (pendingUpdate.rawProcessed && pendingUpdate.intervalProcessed) {
+      delete pendingUpdates.value[timeLabel];
+    } else {
+      // Set a timeout to process anyway after a short delay in case one measurement doesn't arrive
+      setTimeout(() => {
+        if (pendingUpdates.value[timeLabel]) {
+          processUpdate(timeLabel);
+          delete pendingUpdates.value[timeLabel];
+        }
+      }, 2000); // 2 second grace period
+    }
+  };
   
   onMounted(() => {
     // Initial data fetch
@@ -200,6 +254,8 @@
     // Cleanup WebSocket listeners and subscriptions
     websocket.removeEventListener('metric_update', handleMetricUpdate)
     websocket.unsubscribeFromHost(props.host)
+    // Clear any pending updates
+    pendingUpdates.value = {}    
   })
   </script>
   

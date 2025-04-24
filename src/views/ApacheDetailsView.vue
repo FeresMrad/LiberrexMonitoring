@@ -2,7 +2,7 @@
     <a-layout style="min-height: 100vh">
       <HiHello>
         <div class="containers">
-          <h2 class="chart-title">{{ displayName }}</h2>
+          <h2 class="chart-title">Apache Details for {{ displayName }}</h2>
   
           
   
