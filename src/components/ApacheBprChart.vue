@@ -18,7 +18,7 @@
           plugins: {
             title: {
               display: true,
-              text: 'Bytes Per Request',
+              text: 'KBytes Per Request',
               font: {
                 size: 18,
                 weight: 'bold'
@@ -116,11 +116,11 @@
         datasets: [
           {
             ...chartData.value.datasets[0],
-            data: response.data.map(item => item.bytes_per_req)
+            data: response.data.map(item => item.bytes_per_req / 1024)
           },
           {
             ...chartData.value.datasets[1],
-            data: response.data.map(item => item.interval_bytes_per_req)
+            data: response.data.map(item => item.interval_bytes_per_req / 1024)
           }
         ]
       }
@@ -151,11 +151,11 @@
     
     // Update the pending update based on measurement type
     if (data.measurement === 'apache_raw' && data.fields.bytes_per_req !== undefined) {
-      pendingUpdates.value[timeLabel].reqPerSec = data.fields.bytes_per_req;
+      pendingUpdates.value[timeLabel].reqPerSec = data.fields.bytes_per_req / 1024;
       pendingUpdates.value[timeLabel].rawProcessed = true;
     } 
     else if (data.measurement === 'apache_interval' && data.fields.interval_bytes_per_req !== undefined) {
-      pendingUpdates.value[timeLabel].intervalReqPerSec = data.fields.interval_bytes_per_req;
+      pendingUpdates.value[timeLabel].intervalReqPerSec = data.fields.interval_bytes_per_req / 1024;
       pendingUpdates.value[timeLabel].intervalProcessed = true;
     }
     
