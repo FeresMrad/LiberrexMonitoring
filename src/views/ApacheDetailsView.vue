@@ -4,9 +4,7 @@
         <div class="containers">
           <h2 class="chart-title">Apache Details for {{ displayName }}</h2>
   
-          
-  
-          <!-- Chart grid (other dashboard components) -->
+          <!-- Chart grid with charts and our new Top URLs component -->
           <div class="chart-grid">
             <div class="chart-item">
               <ApacheRpsChart :host="host" />
@@ -14,17 +12,11 @@
             <div class="chart-item">
               <ApacheBpsChart :host="host" />
             </div>
-            <!--<div class="chart-item"> 
-              <ApacheDprChart :host="host" />
-            </div>
             <div class="chart-item">
-              <ApacheBprChart :host="host" />
-            </div> -->
-           
+              <ApacheTopUrls :host="host" />
+            </div>
           </div>
           <div><ApacheTable :host="host"/></div>
-  
-          
         </div>
       </HiHello>
     </a-layout>
@@ -34,12 +26,11 @@
   import { ref, onMounted, computed } from 'vue'
   import { useRoute } from 'vue-router'
   import HiHello from "@/components/HiHello.vue"
-//  import ApacheBprChart from "@/components/ApacheBprChart.vue"
   import ApacheBpsChart from "@/components/ApacheBpsChart.vue"
-  import ApacheRpsChart from "@/components/ApacheRpsChart.vue"  
-//  import ApacheDprChart from '@/components/ApacheDprChart.vue'
+  import ApacheRpsChart from "@/components/ApacheRpsChart.vue"
+  import ApacheTopUrls from "@/components/ApacheTopUrls.vue"
+  import ApacheTable from '@/components/ApacheTable.vue'
   import api from '@/services/api'
-import ApacheTable from '@/components/ApacheTable.vue'
   
   // Define the host for usage within the component
   const route = useRoute()
@@ -82,15 +73,6 @@ import ApacheTable from '@/components/ApacheTable.vue'
     margin-bottom: 15px;
   }
   
-  /* Top row styling: mix of uptime and gauge components */
-  .top-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    width: 100%;
-    margin-bottom: 20px;
-  }
-  
   /* Chart grid styling: 3 columns */
   .chart-grid {
     display: grid;
@@ -111,16 +93,16 @@ import ApacheTable from '@/components/ApacheTable.vue'
     min-width: 0; /* Allows flex items to shrink below content size */
   }
   
-  /* Empty cell styling */
-  .chart-item.empty {
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
+  /* Make the grid responsive for smaller screens */
+  @media (max-width: 1200px) {
+    .chart-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
   
-  /* Table container styling */
-  .table-container {
-    width: 100%;
-    margin-top: 10px;
+  @media (max-width: 768px) {
+    .chart-grid {
+      grid-template-columns: 1fr;
+    }
   }
   </style>
