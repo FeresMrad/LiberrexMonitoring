@@ -9,19 +9,20 @@
           <!-- Chart grid (other dashboard components) -->
           <div class="chart-grid">
             <div class="chart-item">
-              <ApacheBprChart :host="host" />
+              <ApacheRpsChart :host="host" />
             </div>
             <div class="chart-item">
               <ApacheBpsChart :host="host" />
             </div>
-            <div class="chart-item"> 
+            <!--<div class="chart-item"> 
               <ApacheDprChart :host="host" />
             </div>
             <div class="chart-item">
-              <ApacheRpsChart :host="host" />
-            </div>
+              <ApacheBprChart :host="host" />
+            </div> -->
            
           </div>
+          <div><ApacheTable :host="host"/></div>
   
           
         </div>
@@ -33,12 +34,12 @@
   import { ref, onMounted, computed } from 'vue'
   import { useRoute } from 'vue-router'
   import HiHello from "@/components/HiHello.vue"
-  import ApacheBprChart from "@/components/ApacheBprChart.vue"
+//  import ApacheBprChart from "@/components/ApacheBprChart.vue"
   import ApacheBpsChart from "@/components/ApacheBpsChart.vue"
-  import ApacheRpsChart from "@/components/ApacheRpsChart.vue"
-  
-  import ApacheDprChart from '@/components/ApacheDprChart.vue'
+  import ApacheRpsChart from "@/components/ApacheRpsChart.vue"  
+//  import ApacheDprChart from '@/components/ApacheDprChart.vue'
   import api from '@/services/api'
+import ApacheTable from '@/components/ApacheTable.vue'
   
   // Define the host for usage within the component
   const route = useRoute()

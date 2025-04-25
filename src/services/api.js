@@ -283,4 +283,10 @@ getApacheDprMetrics(host, timeRange = null) {
   params = formatTimeRangeParams(params, timeRange);
   return apiClient.get('/apache/dpr', { params });
 },
+
+getApacheLogs(host, timeRange = null) {
+  let params = { host };
+  params = formatTimeRangeParams(params, timeRange);
+  return apiClient.get('/apache/logs', { params });
+},
 };
