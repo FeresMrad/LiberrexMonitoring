@@ -2,9 +2,9 @@
     <div>
       <a-table 
         :columns="logColumns" 
-        :data-source="filteredLogs" 
+        :data-source="processedLogs" 
         :pagination="paginationConfig"
-        rowKey="log._stream_id"
+        rowKey="id"
         size="small"
         :scroll="{ y: '60vh' }"
         bordered
@@ -24,8 +24,8 @@
   
           <!-- For Request Line -->
           <template v-else-if="column.key === 'request'">
-            <span v-if="searchText && searchedColumn === 'request_line'" class="log-message">
-              <template v-for="(frag, i) in highlightText(text.toString(), searchText)" :key="i">
+            <span v-if="searchText && searchedColumn === 'request'" class="log-message">
+              <template v-for="(frag, i) in highlightText(text, searchText)" :key="i">
                 <mark v-if="frag.highlight" class="highlight">{{ frag.text }}</mark>
                 <span v-else>{{ frag.text }}</span>
               </template>
@@ -117,26 +117,20 @@
   const logColumns = [
     { 
       title: 'Timestamp', 
-      dataIndex: '_time', 
+      dataIndex: 'timestamp',
       key: 'timestamp',
       width: 130,
       fixed: 'left'
     },
     {
       title: 'IP Address',
-      dataIndex: 'client_ip',
+      dataIndex: 'ip',
       key: 'ip',
       width: 120
     },
-    { 
-      title: 'Request', 
-      dataIndex: 'request_line', 
-      key: 'request', 
-      customFilterDropdown: true
-    },
     {
       title: 'Status',
-      dataIndex: 'status_code',
+      dataIndex: 'status',
       key: 'status',
       width: 80,
       filters: [
@@ -145,30 +139,95 @@
         { text: '4xx Client Error', value: '4' },
         { text: '5xx Server Error', value: '5' }
       ],
-      onFilter: (value, record) => record.status_code && record.status_code.toString().startsWith(value)
+      onFilter: (value, record) => record.status && record.status.toString().startsWith(value)
+    },
+    { 
+      title: 'Request', 
+      dataIndex: 'request',
+      key: 'request', 
+      customFilterDropdown: true
     },
     {
       title: 'Size',
-      dataIndex: 'response_size',
+      dataIndex: 'size',
       key: 'size',
       width: 90
     }
   ];
   
-  // Computed property for filtered and sorted logs
-  const filteredLogs = computed(() => {
-    let logsToDisplay = logs.value;
-  
-    // Filter by request line
-    if (searchText.value && searchedColumn.value === 'request_line') {
-      logsToDisplay = logsToDisplay.filter(log =>
-        log.request_line && log.request_line.toLowerCase().includes(searchText.value.toLowerCase())
-      );
+  // Parse Apache log message into structured data
+  const parseApacheLog = (logMsg) => {
+    // Standard Apache log format regex
+    // This will attempt to match logs in the format: IP - - [DATE] "REQUEST" STATUS SIZE "-" "USER-AGENT"
+    const regex = /^(\S+) \S+ \S+ \[([^\]]+)\] "([^"]*)" (\d+) (\S+) "([^"]*)" "([^"]*)"$/;
+    
+    // Alternative regex for logs without a request (e.g. timeout)
+    //const timeoutRegex = /^(\S+) \S+ \S+ \[([^\]]+)\] "([^"]*)" (\d+) (\S+)/;
+    
+    // Alternative regex for simple logs
+    const simpleRegex = /^(\S+) \S+ \S+ \[([^\]]+)\] "([^"]*)" (\d+) (\S+)/;
+    
+    let match = logMsg.match(regex);
+    
+    if (!match) {
+      // Try the timeout format (with "-" as the request)
+      const timeoutMatch = logMsg.match(/^(\S+) \S+ \S+ \[([^\]]+)\] "(-)" (\d+) (\S+) "([^"]*)" "([^"]*)"$/);
+      if (timeoutMatch) {
+        match = timeoutMatch;
+      } else {
+        // Try the simple format
+        match = logMsg.match(simpleRegex);
+      }
     }
+    
+    if (match) {
+      const request = match[3] !== '-' ? match[3] : '(timeout)';
+      return {
+        ip: match[1],
+        timestamp: match[2],
+        request: request,
+        status: match[4],
+        size: match[5] !== '-' ? parseInt(match[5], 10) : 0,
+        referrer: match[6] || '-',
+        userAgent: match[7] || '-'
+      };
+    }
+    
+    // If no pattern matched, return data with just the raw message
+    return {
+      ip: 'Unknown',
+      request: logMsg,
+      status: 'Unknown',
+      size: 0
+    };
+  };
   
-    return logsToDisplay.sort((a, b) => {
-      const timeA = new Date(a._time).getTime();
-      const timeB = new Date(b._time).getTime();
+  // Process logs to extract structured data
+  const processedLogs = computed(() => {
+    return logs.value.map((log, index) => {
+      // Parse the log message to extract fields
+      const parsedLog = parseApacheLog(log._msg || '');
+      
+      // Return structured log entry with original timestamp
+      return {
+        id: log._stream_id + '-' + index, // Create a unique ID
+        timestamp: log._time,
+        ip: parsedLog.ip,
+        request: parsedLog.request,
+        status: parsedLog.status,
+        size: parsedLog.size,
+        rawLog: log._msg // Keep raw log for reference
+      };
+    }).filter(log => {
+      // Apply search filter if active
+      if (searchText.value && searchedColumn.value === 'request') {
+        return log.request.toLowerCase().includes(searchText.value.toLowerCase());
+      }
+      return true;
+    }).sort((a, b) => {
+      // Sort by timestamp (descending)
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
       return timeB - timeA;
     });
   });
@@ -228,7 +287,7 @@
   
   // Format response size to be more readable (KB, MB, etc.)
   function formatSize(bytes) {
-    if (bytes === undefined || bytes === null) return '-';
+    if (bytes === undefined || bytes === null || bytes === 0) return '-';
     
     const sizes = ['B', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 B';
@@ -241,10 +300,11 @@
   
   // Function to determine status code class for styling
   function getStatusClass(statusCode) {
-    if (!statusCode) return '';
+    if (!statusCode || statusCode === 'Unknown') return '';
     
     const code = parseInt(statusCode);
     
+    if (isNaN(code)) return '';
     if (code >= 200 && code < 300) return 'status-success';
     if (code >= 300 && code < 400) return 'status-redirect';
     if (code >= 400 && code < 500) return 'status-client-error';
