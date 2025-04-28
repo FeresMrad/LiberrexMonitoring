@@ -2,11 +2,11 @@ module.exports = {
   devServer: {
     proxy: {
       '/api': {
-        target: process.env.BACKEND_API_URL,  //  Flask backend
+        target: process.env.VUE_APP_BACKEND_URL,  //  Flask backend
         changeOrigin: true,
       },
       '/socket.io': {
-        target: process.env.BACKEND_API_URL,  //  WebSocket server
+        target: process.env.VUE_APP_BACKEND_URL,  //  WebSocket server
         changeOrigin: true,
         ws: true,  // Enable WebSocket proxy
       }
