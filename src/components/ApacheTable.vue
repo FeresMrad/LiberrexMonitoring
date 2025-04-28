@@ -62,7 +62,7 @@
         <div style="padding: 8px">
           <a-input
             ref="searchInput"
-            :placeholder="`${column.dataIndex === 'responseTime' ? 'Min response time (e.g. 500ms)' : 'Search ' + column.title}`"
+            :placeholder="getPlaceholderForColumn(column.dataIndex)"
             :value="selectedKeys[0]"
             style="width: 188px; margin-bottom: 8px; display: block"
             @input="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
@@ -164,15 +164,48 @@ const logColumns = [
     dataIndex: 'responseTime',
     key: 'responseTime',
     width: 110,
-    customFilterDropdown: true  // Add custom filter dropdown capability
+    customFilterDropdown: true
   },
   {
     title: 'Size',
     dataIndex: 'size',
     key: 'size',
-    width: 90
+    width: 90,
+    customFilterDropdown: true
   }
 ];
+
+// Get appropriate placeholder text based on column
+function getPlaceholderForColumn(columnDataIndex) {
+  switch(columnDataIndex) {
+    case 'responseTime':
+      return 'Min response time (e.g. 500ms)';
+    case 'size':
+      return 'Min size (e.g. 10KB)';
+    default:
+      return `Search ${columnDataIndex}`;
+  }
+}
+
+// Helper function to convert size string with units to bytes
+function parseSizeToBytes(sizeStr) {
+  const sizeStr_lower = sizeStr.toLowerCase();
+  
+  // Match a number followed optionally by a unit
+  const match = sizeStr_lower.match(/^([\d.]+)\s*(b|kb|mb|gb)?$/);
+  if (!match) return NaN;
+  
+  const value = parseFloat(match[1]);
+  const unit = match[2] || 'b'; // Default to bytes if no unit
+  
+  switch(unit) {
+    case 'gb': return value * 1024 * 1024 * 1024;
+    case 'mb': return value * 1024 * 1024;
+    case 'kb': return value * 1024;
+    case 'b':
+    default:   return value;
+  }
+}
 
 // Parse Apache log message into structured data
 const parseApacheLog = (logMsg) => {
@@ -292,6 +325,17 @@ const processedLogs = computed(() => {
       
       // Only show responses that are equal to or greater than the search value
       return !isNaN(searchValueMicros) && log.responseTime >= searchValueMicros;
+    }
+    // Apply search filter for size column
+    if (searchText.value && searchedColumn.value === 'size') {
+      // Skip entries with zero size
+      if (log.size === 0) return false;
+      
+      // Parse the search value with unit handling
+      const minSizeBytes = parseSizeToBytes(searchText.value);
+      
+      // Only show responses with size equal to or greater than the search value
+      return !isNaN(minSizeBytes) && log.size >= minSizeBytes;
     }
     return true;
   }).sort((a, b) => {
