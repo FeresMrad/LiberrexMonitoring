@@ -92,7 +92,7 @@
             minute: 'dd MMM, HH:mm'
           },
         },
-        stacked: true
+        stacked: true,
       },
       y: {
         beginAtZero: true,
@@ -262,19 +262,27 @@
         datasets: [
           {
             ...chartData.value.datasets[0],
-            data: success
+            data: success,
+            barPercentage: 1,
+            categoryPercentage: 0.9
           },
           {
             ...chartData.value.datasets[1],
-            data: redirect
+            data: redirect,
+            barPercentage: 1,
+            categoryPercentage: 0.9
           },
           {
             ...chartData.value.datasets[2],
-            data: clientError
+            data: clientError,
+            barPercentage: 1,
+            categoryPercentage: 0.9
           },
           {
             ...chartData.value.datasets[3],
-            data: serverError
+            data: serverError,
+            barPercentage: 1,
+            categoryPercentage: 0.9
           }
         ]
       };
