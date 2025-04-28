@@ -215,6 +215,9 @@ const parseApacheLog = (logMsg) => {
   // Alternative regex for logs without a request (e.g. timeout) with response time
   const timeoutRegex = /"(-)" (\d+) (\S+) (\d+)? "([^"]*)" "([^"]*)"$/;
   
+  // Special regex for timeout format like: "-" 408 323 16 "-" "-"
+  const timeoutSpecificRegex = /"(-)" (\d+) (\d+) (\d+)/;
+  
   // Alternative regex for simple logs with response time
   const simpleRegex = /"(GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH) ([^ ]+) HTTP\/[\d.]+" (\d+) (\S+) (\d+)?/;
   
@@ -233,8 +236,20 @@ const parseApacheLog = (logMsg) => {
     ip = ipMatch[0];
   }
   
+  // First, try the special timeout pattern that has "-" request followed by status, size, and time
+  const timeoutSpecificMatch = logMsg.match(timeoutSpecificRegex);
+  if (timeoutSpecificMatch) {
+    return {
+      ip: ip,
+      request: '(timeout)',
+      status: timeoutSpecificMatch[2],  // Status code (e.g. 408)
+      size: parseInt(timeoutSpecificMatch[3], 10),  // Size (e.g. 323)
+      responseTime: parseInt(timeoutSpecificMatch[4], 10)  // Response time (e.g. 16)
+    };
+  }
+  
   if (!match) {
-    // Try the timeout format (with "-" as the request) with response time
+    // Try the regular timeout format (with "-" as the request) with response time
     match = logMsg.match(timeoutRegex);
     if (!match) {
       // Try the simple format with response time
