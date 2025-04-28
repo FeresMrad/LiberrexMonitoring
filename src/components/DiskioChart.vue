@@ -59,7 +59,8 @@ const chartData = shallowRef({
       fill: true,
       borderColor: 'rgba(75,192,192,1)',
       backgroundColor: 'rgba(75,192,192,0.2)',
-      pointRadius: 0
+      pointRadius: 0,
+      borderWidth: 2,
     },
     {
       label: 'Write',
@@ -67,7 +68,8 @@ const chartData = shallowRef({
       fill: true,
       borderColor: 'rgba(255,99,132,1)',
       backgroundColor: 'rgba(255,99,132,0.2)',
-      pointRadius: 0
+      pointRadius: 0,
+      borderWidth: 2,
     }
   ]
 })

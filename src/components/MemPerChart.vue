@@ -45,7 +45,8 @@ const chartData = shallowRef({
     data: [],
     fill: true,
     borderColor: 'rgba(75,192,192,1)',
-    backgroundColor: 'rgba(75,192,192,0.2)'
+    backgroundColor: 'rgba(75,192,192,0.2)',
+    borderWidth: 2,
   }]
 })
 

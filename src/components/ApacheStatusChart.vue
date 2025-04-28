@@ -49,28 +49,28 @@
         data: [],
         backgroundColor: 'rgba(75, 192, 92, 0.6)',
         borderColor: 'rgba(75, 192, 92, 1)',
-        borderWidth: 1
+        borderWidth: 2
       },
       {
         label: '3xx',
         data: [],
         backgroundColor: 'rgba(54, 162, 235, 0.6)',
         borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
+        borderWidth: 2
       },
       {
         label: '4xx',
         data: [],
         backgroundColor: 'rgba(255, 159, 64, 0.6)',
         borderColor: 'rgba(255, 159, 64, 1)',
-        borderWidth: 1
+        borderWidth: 2
       },
       {
         label: '5xx',
         data: [],
         backgroundColor: 'rgba(255, 99, 132, 0.6)',
         borderColor: 'rgba(255, 99, 132, 1)',
-        borderWidth: 1
+        borderWidth: 2
       }
     ]
   })
