@@ -89,20 +89,16 @@
         time: {
           unit: 'minute',
           displayFormats: {
-            minute: 'HH:mm'
+            minute: 'dd MMM, HH:mm'
           },
-          tooltipFormat: 'MMM d, yyyy HH:mm'
-        },
-        title: {
-          display: true,
         },
         stacked: true
       },
       y: {
         beginAtZero: true,
         stacked: true,
-        title: {
-          display: true,
+        ticks: {
+            precision: 0,
         }
       }
     },
@@ -111,7 +107,12 @@
         callbacks: {
           title: function(context) {
             const date = new Date(context[0].parsed.x);
-            return date.toLocaleString("en-GB");
+            return date.toLocaleString('en-GB', { 
+        minute: 'numeric', 
+        hour: 'numeric', 
+        day: 'numeric', 
+        month: 'short' 
+      });
           }
         }
       },
