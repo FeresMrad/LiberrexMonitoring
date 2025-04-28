@@ -157,7 +157,6 @@ const logColumns = [
     dataIndex: 'responseTime',
     key: 'responseTime',
     width: 110,
-    sorter: (a, b) => (a.responseTime || 0) - (b.responseTime || 0)
   },
   {
     title: 'Size',

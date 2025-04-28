@@ -201,9 +201,9 @@
     fetchLogs();
     
     // Refresh data every 60 seconds
-    refreshInterval.value = setInterval(() => {
-      fetchLogs();
-    }, 60000);
+    // refreshInterval.value = setInterval(() => {
+    //   fetchLogs();
+    // }, 60000);
   });
   
   // Clean up on unmount

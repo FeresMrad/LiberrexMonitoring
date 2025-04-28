@@ -4,7 +4,7 @@
         <div class="containers">
           <h2 class="chart-title">Apache Details for {{ displayName }}</h2>
   
-          <!-- Chart grid with charts and our new Top URLs component -->
+          <!-- First row of charts -->
           <div class="chart-grid">
             <div class="chart-item">
               <ApacheRpsChart :host="host" />
@@ -16,9 +16,18 @@
               <ApacheTopUrls :host="host" />
             </div>
           </div>
+  
+          <!-- Second row with status chart -->
+          <div class="chart-grid">
+            <div class="chart-item wide">
+              <ApacheStatusChart :host="host" />
+            </div>
+          </div>
+  
+          <!-- Table container -->
           <div class="table-container">
             <ApacheTable :host="host"/>
-        </div>
+          </div>
         </div>
       </HiHello>
     </a-layout>
@@ -31,6 +40,7 @@
   import ApacheBpsChart from "@/components/ApacheBpsChart.vue"
   import ApacheRpsChart from "@/components/ApacheRpsChart.vue"
   import ApacheTopUrls from "@/components/ApacheTopUrls.vue"
+  import ApacheStatusChart from "@/components/ApacheStatusChart.vue"
   import ApacheTable from '@/components/ApacheTable.vue'
   import api from '@/services/api'
   
@@ -84,6 +94,11 @@
     margin-bottom: 20px;
   }
   
+  /* Wide chart that spans the entire width */
+  .chart-item.wide {
+    grid-column: span 3;
+  }
+  
   /* Chart item styling */
   .chart-item {
     border: 1px solid #ccc;
@@ -94,22 +109,31 @@
     overflow: hidden; /* Prevent content from breaking out */
     min-width: 0; /* Allows flex items to shrink below content size */
   }
+  
   /* Table container styling */
-.table-container {
-  width: 100%;
-  margin-top: 10px;
-}
+  .table-container {
+    width: 100%;
+    margin-top: 10px;
+  }
   
   /* Make the grid responsive for smaller screens */
   @media (max-width: 1200px) {
     .chart-grid {
       grid-template-columns: repeat(2, 1fr);
     }
+    
+    .chart-item.wide {
+      grid-column: span 2;
+    }
   }
   
   @media (max-width: 768px) {
     .chart-grid {
       grid-template-columns: 1fr;
+    }
+    
+    .chart-item.wide {
+      grid-column: span 1;
     }
   }
   </style>
