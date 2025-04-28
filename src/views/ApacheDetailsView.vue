@@ -16,7 +16,9 @@
               <ApacheTopUrls :host="host" />
             </div>
           </div>
-          <div><ApacheTable :host="host"/></div>
+          <div class="table-container">
+            <ApacheTable :host="host"/>
+        </div>
         </div>
       </HiHello>
     </a-layout>
@@ -92,6 +94,11 @@
     overflow: hidden; /* Prevent content from breaking out */
     min-width: 0; /* Allows flex items to shrink below content size */
   }
+  /* Table container styling */
+.table-container {
+  width: 100%;
+  margin-top: 10px;
+}
   
   /* Make the grid responsive for smaller screens */
   @media (max-width: 1200px) {

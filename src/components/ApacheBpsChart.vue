@@ -18,7 +18,7 @@
           plugins: {
             title: {
               display: true,
-              text: 'Bytes Per Second',
+              text: 'KBytes Per Second',
               font: {
                 size: 18,
                 weight: 'bold'
@@ -157,11 +157,11 @@
       
       // Store raw data for EWMA calculation
       rawTimeLabels.value = response.data.map(item => formatDate(item.time));
-      rawIntervalData.value = response.data.map(item => item.interval_bytes_per_sec);
+      rawIntervalData.value = response.data.map(item => item.interval_bytes_per_sec / 1024);
       
       // Calculate EWMA from the interval data
       const ewmaData = calculateEWMA(
-        response.data.map(item => item.interval_bytes_per_sec), 
+        response.data.map(item => item.interval_bytes_per_sec / 1024), 
         props.ewmaAlpha
       );
       
@@ -174,7 +174,7 @@
           },
           {
             ...chartData.value.datasets[1],
-            data: response.data.map(item => item.interval_bytes_per_sec)
+            data: response.data.map(item => item.interval_bytes_per_sec / 1024)
           }
         ]
       }
@@ -205,11 +205,11 @@
     
     // Update the pending update based on measurement type
     if (data.measurement === 'apache_raw' && data.fields.bytes_per_sec !== undefined) {
-      pendingUpdates.value[timeLabel].bytesPerSec = data.fields.bytes_per_sec;
+      pendingUpdates.value[timeLabel].bytesPerSec = data.fields.bytes_per_sec / 1024;
       pendingUpdates.value[timeLabel].rawProcessed = true;
     } 
     else if (data.measurement === 'apache_interval' && data.fields.interval_bytes_per_sec !== undefined) {
-      pendingUpdates.value[timeLabel].intervalBytesPerSec = data.fields.interval_bytes_per_sec;
+      pendingUpdates.value[timeLabel].intervalBytesPerSec = data.fields.interval_bytes_per_sec / 1024;
       pendingUpdates.value[timeLabel].intervalProcessed = true;
       
       // Since we got interval data, process the update (we no longer need to wait for raw data)
