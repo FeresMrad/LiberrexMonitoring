@@ -17,9 +17,15 @@
           <span class="timestamp">{{ formatTimestamp(text) }}</span>
         </template>
 
-        <!-- For IP Address -->
+        <!-- For IP Address with highlighting -->
         <template v-else-if="column.key === 'ip'">
-          <span>{{ text }}</span>
+          <span v-if="searchText && searchedColumn === 'ip'" class="ip-address">
+            <template v-for="(frag, i) in highlightText(text, searchText)" :key="i">
+              <mark v-if="frag.highlight" class="highlight">{{ frag.text }}</mark>
+              <span v-else>{{ frag.text }}</span>
+            </template>
+          </span>
+          <span v-else>{{ text }}</span>
         </template>
 
         <!-- For Request Line -->
@@ -131,7 +137,8 @@ const logColumns = [
     title: 'IP Address',
     dataIndex: 'ip',
     key: 'ip',
-    width: 120
+    width: 120,
+    customFilterDropdown: true
   },
   {
     title: 'Status',
@@ -169,19 +176,28 @@ const logColumns = [
 // Parse Apache log message into structured data
 const parseApacheLog = (logMsg) => {
   // Combined format with response time and optional vhost
-  const regex = /^(?:\S+:\d+\s)?(\S+) \S+ \S+ \[([^\]]+)\] "([^"]*)" (\d+) (\S+) (\d+)? "([^"]*)" "([^"]*)"$/;
+  const regex = /"(GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH) ([^ ]+) HTTP\/[\d.]+" (\d+) (\S+) (\d+)? "([^"]*)" "([^"]*)"$/;
   
   // Alternative regex for logs without a request (e.g. timeout) with response time
-  const timeoutRegex = /^(?:\S+:\d+\s)?(\S+) \S+ \S+ \[([^\]]+)\] "(-)" (\d+) (\S+) (\d+)? "([^"]*)" "([^"]*)"$/;
+  const timeoutRegex = /"(-)" (\d+) (\S+) (\d+)? "([^"]*)" "([^"]*)"$/;
   
   // Alternative regex for simple logs with response time
-  const simpleRegex = /^(?:\S+:\d+\s)?(\S+) \S+ \S+ \[([^\]]+)\] "([^"]*)" (\d+) (\S+) (\d+)?/;
+  const simpleRegex = /"(GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH) ([^ ]+) HTTP\/[\d.]+" (\d+) (\S+) (\d+)?/;
   
   // Fallback for original combined format without response time
-  const legacyRegex = /^(?:\S+:\d+\s)?(\S+) \S+ \S+ \[([^\]]+)\] "([^"]*)" (\d+) (\S+) "([^"]*)" "([^"]*)"$/;
+  const legacyRegex = /"(GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH) ([^ ]+) HTTP\/[\d.]+" (\d+) (\S+) "([^"]*)" "([^"]*)"$/;
   
-  // First try with the response time regex
+  // Additional IP extraction regex
+  const ipRegex = /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/;
+  
   let match = logMsg.match(regex);
+  let ip = 'Unknown';
+  
+  // Try to extract IP from the log message
+  const ipMatch = logMsg.match(ipRegex);
+  if (ipMatch) {
+    ip = ipMatch[0];
+  }
   
   if (!match) {
     // Try the timeout format (with "-" as the request) with response time
@@ -195,14 +211,11 @@ const parseApacheLog = (logMsg) => {
         if (match) {
           // If it matches the legacy format, we need to adjust our indices
           return {
-            ip: match[1],
-            timestamp: match[2],
-            request: match[3] !== '-' ? match[3] : '(timeout)',
-            status: match[4],
-            size: match[5] !== '-' ? parseInt(match[5], 10) : 0,
-            responseTime: null,
-            referrer: match[6] || '-',
-            userAgent: match[7] || '-'
+            ip: ip,
+            request: match[2] !== '-' ? match[2] : '(timeout)',
+            status: match[3],
+            size: match[4] !== '-' ? parseInt(match[4], 10) : 0,
+            responseTime: null
           };
         }
       }
@@ -210,22 +223,19 @@ const parseApacheLog = (logMsg) => {
   }
   
   if (match) {
-    const request = match[3] !== '-' ? match[3] : '(timeout)';
+    const request = match[2] !== '-' ? match[2] : '(timeout)';
     return {
-      ip: match[1],
-      timestamp: match[2],
+      ip: ip,
       request: request,
-      status: match[4],
-      size: match[5] !== '-' ? parseInt(match[5], 10) : 0,
-      responseTime: match[6] ? parseInt(match[6], 10) : null, // Response time in microseconds
-      referrer: match[7] || '-',
-      userAgent: match[8] || '-'
+      status: match[3],
+      size: match[4] !== '-' ? parseInt(match[4], 10) : 0,
+      responseTime: match[5] ? parseInt(match[5], 10) : null // Response time in microseconds
     };
   }
   
   // If no pattern matched, return data with just the raw message
   return {
-    ip: 'Unknown',
+    ip: ip,
     request: logMsg,
     status: 'Unknown',
     size: 0,
@@ -251,9 +261,13 @@ const processedLogs = computed(() => {
       rawLog: log._msg // Keep raw log for reference
     };
   }).filter(log => {
-    // Apply search filter if active
+    // Apply search filter for request column
     if (searchText.value && searchedColumn.value === 'request') {
       return log.request.toLowerCase().includes(searchText.value.toLowerCase());
+    }
+    // Apply search filter for IP column
+    if (searchText.value && searchedColumn.value === 'ip') {
+      return log.ip.toLowerCase().includes(searchText.value.toLowerCase());
     }
     return true;
   }).sort((a, b) => {
@@ -414,6 +428,10 @@ watch([() => props.timeRange, () => props.refreshTrigger], () => {
   white-space: pre-wrap;
   line-height: 1.3;
   display: block;
+}
+
+.ip-address {
+  white-space: nowrap;
 }
 
 .highlight { 
