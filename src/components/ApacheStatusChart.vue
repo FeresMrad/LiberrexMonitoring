@@ -11,7 +11,7 @@
   
       <!-- Chart -->
       <div style="height: 300px;">
-        <Line v-if="loaded" :data="chartData" :options="chartOptions" />
+        <Bar v-if="loaded" :data="chartData" :options="chartOptions" />
         <div v-else class="loading-container">
           <a-spin tip="Loading status data..." />
         </div>
@@ -20,13 +20,13 @@
   </template>
   
   <script setup>
-  import { shallowRef, ref, onMounted, onUnmounted, computed, watch, defineProps } from 'vue'
+  import { shallowRef, ref, onMounted, watch, defineProps } from 'vue'
   import api from '@/services/api'
-  import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale, TimeScale, Title, Tooltip, Legend, Filler } from 'chart.js'
-  import { Line } from 'vue-chartjs'
+  import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, TimeScale, Title, Tooltip, Legend } from 'chart.js'
+  import { Bar } from 'vue-chartjs'
   import 'chartjs-adapter-date-fns'
   
-  ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, TimeScale, Title, Tooltip, Legend, Filler)
+  ChartJS.register(BarElement, CategoryScale, LinearScale, TimeScale, Title, Tooltip, Legend)
   
   // Define a prop to accept host value
   const props = defineProps({
@@ -47,50 +47,30 @@
       {
         label: '2xx',
         data: [],
-        fill: true,
-        stack: 'stack1', // Stack identifier
+        backgroundColor: 'rgba(75, 192, 92, 0.6)',
         borderColor: 'rgba(75, 192, 92, 1)',
-        backgroundColor: 'rgba(75, 192, 92, 0.2)',
-        pointRadius: 0,
-        borderWidth: 1,
-        stepped: 'before', // Create horizontal line segments (steps)
-        tension: 0 // Remove curve
+        borderWidth: 1
       },
       {
         label: '3xx',
         data: [],
-        fill: true,
-        stack: 'stack1', // Stack identifier
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
         borderColor: 'rgba(54, 162, 235, 1)',
-        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-        pointRadius: 0,
-        borderWidth: 1,
-        stepped: 'before', // Create horizontal line segments (steps)
-        tension: 0 // Remove curve
+        borderWidth: 1
       },
       {
         label: '4xx',
         data: [],
-        fill: true,
-        stack: 'stack1', // Stack identifier
+        backgroundColor: 'rgba(255, 159, 64, 0.6)',
         borderColor: 'rgba(255, 159, 64, 1)',
-        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-        pointRadius: 0,
-        borderWidth: 1,
-        stepped: 'before', // Create horizontal line segments (steps)
-        tension: 0 // Remove curve
+        borderWidth: 1
       },
       {
         label: '5xx',
         data: [],
-        fill: true,
-        stack: 'stack1', // Stack identifier
+        backgroundColor: 'rgba(255, 99, 132, 0.6)',
         borderColor: 'rgba(255, 99, 132, 1)',
-        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-        pointRadius: 0,
-        borderWidth: 1,
-        stepped: 'before', // Create horizontal line segments (steps)
-        tension: 0 // Remove curve
+        borderWidth: 1
       }
     ]
   })
@@ -113,18 +93,15 @@
           },
           tooltipFormat: 'MMM d, yyyy HH:mm'
         },
-        ticks: {
-          autoSkip: true,
-          maxTicksLimit: 30
-        },
         title: {
           display: true,
           text: 'Time'
-        }
+        },
+        stacked: true
       },
       y: {
         beginAtZero: true,
-        stacked: true, // Enable stacking on the y-axis
+        stacked: true,
         title: {
           display: true,
           text: 'Number of Responses'
