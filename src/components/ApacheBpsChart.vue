@@ -71,7 +71,7 @@
     labels: [],
     datasets: [
       {
-        label: 'Average',
+        label: 'Weighted Average',
         data: [],
         fill: true,
         borderColor: 'rgba(75,192,192,1)',

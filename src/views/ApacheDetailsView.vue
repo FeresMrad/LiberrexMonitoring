@@ -17,10 +17,13 @@
             </div>
           </div>
   
-          <!-- Second row with status chart -->
+          <!-- Second row with status chart and IP addresses -->
           <div class="chart-grid">
-            <div class="chart-item wide">
+            <div class="chart-item wide-2">
               <ApacheStatusChart :host="host" />
+            </div>
+            <div class="chart-item">
+              <ApacheTopIPs :host="host" />
             </div>
           </div>
   
@@ -41,6 +44,7 @@
   import ApacheRpsChart from "@/components/ApacheRpsChart.vue"
   import ApacheTopUrls from "@/components/ApacheTopUrls.vue"
   import ApacheStatusChart from "@/components/ApacheStatusChart.vue"
+  import ApacheTopIPs from "@/components/ApacheTopIPs.vue"
   import ApacheTable from '@/components/ApacheTable.vue'
   import api from '@/services/api'
   
@@ -85,7 +89,7 @@
     margin-bottom: 15px;
   }
   
-  /* Chart grid styling: 3 columns */
+  /* Chart grid styling: 3 columns in first row, 2+1 in second row */
   .chart-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -94,9 +98,9 @@
     margin-bottom: 20px;
   }
   
-  /* Wide chart that spans the entire width */
-  .chart-item.wide {
-    grid-column: span 3;
+  /* Wide chart that spans multiple columns */
+  .chart-item.wide-2 {
+    grid-column: span 2;
   }
   
   /* Chart item styling */
@@ -122,7 +126,7 @@
       grid-template-columns: repeat(2, 1fr);
     }
     
-    .chart-item.wide {
+    .chart-item.wide-2 {
       grid-column: span 2;
     }
   }
@@ -132,7 +136,7 @@
       grid-template-columns: 1fr;
     }
     
-    .chart-item.wide {
+    .chart-item.wide-2 {
       grid-column: span 1;
     }
   }

@@ -95,12 +95,7 @@
   
     return isNaN(date.getTime()) 
       ? "Invalid Date" 
-      : date.toLocaleString('en-GB', { 
-          minute: 'numeric', 
-          hour: 'numeric', 
-          day: 'numeric', 
-          month: 'short' 
-        });
+      : date.toLocaleString('en-GB');
   }
   
   /**

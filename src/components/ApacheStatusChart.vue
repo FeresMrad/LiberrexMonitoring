@@ -95,7 +95,6 @@
         },
         title: {
           display: true,
-          text: 'Time'
         },
         stacked: true
       },
@@ -104,7 +103,6 @@
         stacked: true,
         title: {
           display: true,
-          text: 'Number of Responses'
         }
       }
     },
@@ -113,13 +111,13 @@
         callbacks: {
           title: function(context) {
             const date = new Date(context[0].parsed.x);
-            return date.toLocaleString();
+            return date.toLocaleString("en-GB");
           }
         }
       },
       title: {
         display: true,
-        text: 'HTTP Status Codes Over Time',
+        text: 'Status Codes Count',
         font: {
           size: 18,
           weight: 'bold'
