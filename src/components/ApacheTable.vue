@@ -62,7 +62,7 @@
         <div style="padding: 8px">
           <a-input
             ref="searchInput"
-            :placeholder="`Search ${column.title}`"
+            :placeholder="`${column.dataIndex === 'responseTime' ? 'Min response time (e.g. 500ms)' : 'Search ' + column.title}`"
             :value="selectedKeys[0]"
             style="width: 188px; margin-bottom: 8px; display: block"
             @input="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
@@ -164,6 +164,7 @@ const logColumns = [
     dataIndex: 'responseTime',
     key: 'responseTime',
     width: 110,
+    customFilterDropdown: true  // Add custom filter dropdown capability
   },
   {
     title: 'Size',
@@ -268,6 +269,29 @@ const processedLogs = computed(() => {
     // Apply search filter for IP column
     if (searchText.value && searchedColumn.value === 'ip') {
       return log.ip.toLowerCase().includes(searchText.value.toLowerCase());
+    }
+    // Apply search filter for response time column
+    if (searchText.value && searchedColumn.value === 'responseTime') {
+      // Skip null response times
+      if (log.responseTime === null) return false;
+      
+      // Parse the search value, handling units if present
+      let searchValueMicros;
+      const searchVal = searchText.value.toLowerCase();
+      
+      if (searchVal.endsWith('ms')) {
+        // Convert milliseconds to microseconds
+        searchValueMicros = parseFloat(searchVal) * 1000;
+      } else if (searchVal.endsWith('s')) {
+        // Convert seconds to microseconds
+        searchValueMicros = parseFloat(searchVal) * 1000000;
+      } else {
+        // Assume milliseconds if no unit is specified
+        searchValueMicros = parseFloat(searchVal) * 1000;
+      }
+      
+      // Only show responses that are equal to or greater than the search value
+      return !isNaN(searchValueMicros) && log.responseTime >= searchValueMicros;
     }
     return true;
   }).sort((a, b) => {

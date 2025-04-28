@@ -228,9 +228,6 @@
     // Convert intervals object to array and sort by time
     const timeIntervals = Object.values(intervals).sort((a, b) => a.time - b.time);
     
-    // Log the total counts
-    console.log('Total status counts:', statusCounts);
-    
     return timeIntervals;
   }
   
