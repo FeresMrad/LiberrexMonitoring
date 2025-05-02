@@ -46,6 +46,10 @@
       type: String,
       required: true
     },
+    timeRange: {
+      type: [String, Object],
+      default: '60m'
+    },
     refreshTrigger: {
       type: Number,
       default: 0
@@ -144,11 +148,11 @@
     return sortedIps;
   });
   
-  // Fetch logs from the API - always use 60m time range
+  // Fetch logs from the API using the current timeRange
   const fetchLogs = async () => {
     try {
       loading.value = true;
-      const response = await api.getApacheLogs(props.host, '60m');
+      const response = await api.getApacheLogs(props.host, props.timeRange);
       logs.value = response.data;
       error.value = null;
     } catch (err) {
@@ -167,12 +171,12 @@
     return `hsl(${hue}, 70%, 50%)`;
   };
   
-  // Watch for changes in refreshTrigger
-  watch(() => props.refreshTrigger, () => {
+  // Watch for changes in timeRange and refreshTrigger props
+  watch([() => props.timeRange, () => props.refreshTrigger], () => {
     fetchLogs();
   });
   
-  // Setup automatic refresh
+  // Setup initial data load
   onMounted(() => {
     fetchLogs();
   });
