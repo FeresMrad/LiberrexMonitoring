@@ -20,7 +20,7 @@
   </template>
   
   <script setup>
-  import { shallowRef, ref, onMounted, watch, defineProps } from 'vue'
+  import { shallowRef, ref, onMounted, defineProps } from 'vue'
   import api from '@/services/api'
   import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, TimeScale, Title, Tooltip, Legend } from 'chart.js'
   import { Bar } from 'vue-chartjs'
@@ -292,42 +292,7 @@
     }
   }
   
-  // Watch for changes in intervalMinutes prop
-  watch(() => props.intervalMinutes, () => {
-    if (logs.value.length > 0) {
-      // Reprocess existing logs with new interval
-      const timeIntervals = processLogsIntoTimeIntervals(logs.value, props.intervalMinutes);
-      
-      // Update chart data
-      const timestamps = timeIntervals.map(interval => interval.time);
-      const success = timeIntervals.map(interval => interval['2xx']);
-      const redirect = timeIntervals.map(interval => interval['3xx']);
-      const clientError = timeIntervals.map(interval => interval['4xx']);
-      const serverError = timeIntervals.map(interval => interval['5xx']);
-      
-      chartData.value = {
-        labels: timestamps,
-        datasets: [
-          {
-            ...chartData.value.datasets[0],
-            data: success
-          },
-          {
-            ...chartData.value.datasets[1],
-            data: redirect
-          },
-          {
-            ...chartData.value.datasets[2],
-            data: clientError
-          },
-          {
-            ...chartData.value.datasets[3],
-            data: serverError
-          }
-        ]
-      };
-    }
-  });
+
   
   onMounted(() => {
     // Initial data fetch - last hour by default

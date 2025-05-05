@@ -33,7 +33,7 @@
           <!-- Actions Column -->
           <template v-if="column.key === 'actions'">
             <div class="action-buttons">
-              <a-tooltip>
+              <a-tooltip title="Edit User">
                 <a-button 
                   type="default" 
                   size="small" 
