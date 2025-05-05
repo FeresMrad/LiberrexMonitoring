@@ -290,4 +290,33 @@ getApacheLogs(host, timeRange = null) {
   params = formatTimeRangeParams(params, timeRange);
   return apiClient.get('/apache/logs', { params });
 },
+
+// Alert methods
+getAlerts(params = {}) {
+  return apiClient.get('/alerts/events', { params });
+},
+
+acknowledgeAlert(alertId) {
+  return apiClient.post(`/alerts/events/${alertId}/acknowledge`);
+},
+
+getAlertRules() {
+  return apiClient.get('/alerts/rules');
+},
+
+getAlertRule(ruleId) {
+  return apiClient.get(`/alerts/rules/${ruleId}`);
+},
+
+createAlertRule(ruleData) {
+  return apiClient.post('/alerts/rules', ruleData);
+},
+
+updateAlertRule(ruleId, ruleData) {
+  return apiClient.put(`/alerts/rules/${ruleId}`, ruleData);
+},
+
+deleteAlertRule(ruleId) {
+  return apiClient.delete(`/alerts/rules/${ruleId}`);
+}
 };

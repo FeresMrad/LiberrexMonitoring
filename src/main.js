@@ -6,7 +6,6 @@ import Antd from 'ant-design-vue';
 import 'ant-design-vue/dist/reset.css';
 import DashboardView from "./views/DashboardView.vue";
 import EntitiesView from "./views/EntitiesView.vue";
-import TestView from "./views/TestView.vue";
 import SshDetailsView from "./views/SshDetailsView.vue";
 import LoginView from "./views/LoginView.vue";
 import NotFoundView from "./views/NotFoundView.vue";
@@ -17,6 +16,7 @@ import api from "./services/api";
 import { message } from 'ant-design-vue';
 import GroupManagementView from "./views/GroupManagementView.vue";
 import ApacheDetailsView from "./views/ApacheDetailsView.vue";
+import AlertsView from "./views/AlertsView.vue";
 
 // Authentication guard for protected routes
 const requireAuth = (to, from, next) => {
@@ -99,7 +99,7 @@ const routes = [
   { path: "/login", component: LoginView },
   { 
     path: "/alerts", 
-    component: TestView, 
+    component: AlertsView, 
     beforeEnter: requireAuth 
   },
   { 
