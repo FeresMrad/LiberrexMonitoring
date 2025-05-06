@@ -1,71 +1,80 @@
 <template>
     <div class="notifications-dropdown">
       <!-- Bell icon with notification count badge -->
-      <div class="notification-icon" @click="toggleDropdown">
-        <bell-outlined />
-        <a-badge :count="unreadCount" :offset="[0, 8]" v-if="unreadCount > 0" />
-      </div>
-  
-      <!-- Dropdown menu -->
-      <div class="dropdown-menu" v-if="dropdownVisible" v-click-outside="hideDropdown">
-        <div class="dropdown-header">
-          <span class="title">Notifications</span>
-          <a-button 
-            type="link" 
-            size="small" 
-            @click="markAllAsRead"
-            :disabled="notifications.length === 0 || markingAllRead"
-          >
-            Mark all as read
-          </a-button>
+      <a-dropdown 
+        v-model:open="dropdownVisible" 
+        trigger="click"
+        placement="bottomRight"
+        :getPopupContainer="(trigger) => trigger.parentNode"
+        @openChange="handleVisibilityChange"
+      >
+        <div class="notification-icon">
+          <bell-outlined />
+          <a-badge :count="unreadCount" :offset="[0, 8]" v-if="unreadCount > 0" />
         </div>
-  
-        <div class="dropdown-content">
-          <a-spin :spinning="loading" tip="Loading notifications...">
-            <div v-if="notifications.length === 0" class="empty-state">
-              <inbox-outlined />
-              <span>No notifications</span>
-            </div>
-            
-            <a-list v-else class="notification-list">
-              <a-list-item 
-                v-for="notification in notifications" 
-                :key="notification.id"
-                :class="{ 'notification-read': notification.read, 'notification-unread': !notification.read }"
-                @click="viewNotification(notification)"
+        
+        <template #overlay>
+          <a-menu style="width: 350px; max-height: 500px;">
+            <div class="dropdown-header">
+              <span class="title">Notifications</span>
+              <a-button 
+                type="link" 
+                size="small" 
+                @click="markAllAsRead"
+                :disabled="notifications.length === 0 || markingAllRead"
               >
-                <div class="notification-item">
-                  <div class="notification-severity" :class="notification.severity">
-                    <!-- Show different icons based on severity -->
-                    <warning-outlined v-if="notification.severity === 'critical'" />
-                    <exclamation-outlined v-else-if="notification.severity === 'warning'" />
-                    <info-circle-outlined v-else />
-                  </div>
-                  <div class="notification-content">
-                    <div class="notification-title">
-                      {{ notification.title }}
-                      <span class="notification-host">{{ notification.host }}</span>
-                    </div>
-                    <div class="notification-message" v-html="notification.message"></div>
-                    <div class="notification-time">{{ formatTime(notification.time) }}</div>
-                  </div>
-                  <div class="notification-actions">
-                    <check-outlined 
-                      v-if="!notification.read" 
-                      @click.stop="markAsRead(notification.id)" 
-                      title="Mark as read"
-                    />
-                  </div>
+                Mark all as read
+              </a-button>
+            </div>
+    
+            <div class="dropdown-content">
+              <a-spin :spinning="loading" tip="Loading notifications...">
+                <div v-if="notifications.length === 0" class="empty-state">
+                  <inbox-outlined />
+                  <span>No notifications</span>
                 </div>
-              </a-list-item>
-            </a-list>
-          </a-spin>
-        </div>
-  
-        <div class="dropdown-footer">
-          <router-link to="/alerts" @click="hideDropdown">View all alerts</router-link>
-        </div>
-      </div>
+                
+                <a-list v-else class="notification-list">
+                  <a-list-item 
+                    v-for="notification in notifications" 
+                    :key="notification.id"
+                    :class="{ 'notification-read': notification.read, 'notification-unread': !notification.read }"
+                    @click="viewNotification(notification)"
+                  >
+                    <div class="notification-item">
+                      <div class="notification-severity" :class="notification.severity">
+                        <!-- Show different icons based on severity -->
+                        <warning-outlined v-if="notification.severity === 'critical'" />
+                        <exclamation-outlined v-else-if="notification.severity === 'warning'" />
+                        <info-circle-outlined v-else />
+                      </div>
+                      <div class="notification-content">
+                        <div class="notification-title">
+                          {{ notification.title }}
+                          <span class="notification-host">{{ notification.host }}</span>
+                        </div>
+                        <div class="notification-message" v-html="notification.message"></div>
+                        <div class="notification-time">{{ formatTime(notification.time) }}</div>
+                      </div>
+                      <div class="notification-actions">
+                        <check-outlined 
+                          v-if="!notification.read" 
+                          @click.stop="markAsRead(notification.id)" 
+                          title="Mark as read"
+                        />
+                      </div>
+                    </div>
+                  </a-list-item>
+                </a-list>
+              </a-spin>
+            </div>
+    
+            <div class="dropdown-footer">
+              <router-link to="/alerts" @click="hideDropdown">View all alerts</router-link>
+            </div>
+          </a-menu>
+        </template>
+      </a-dropdown>
     </div>
   </template>
   
@@ -90,33 +99,17 @@
   const loading = ref(false);
   const markingAllRead = ref(false);
   
-  // Click outside directive
-  const vClickOutside = {
-    mounted(el, binding) {
-      el._clickOutside = event => {
-        // Check if click is outside the element
-        if (!(el === event.target || el.contains(event.target))) {
-          binding.value(event);
-        }
-      };
-      document.addEventListener('click', el._clickOutside);
-    },
-    unmounted(el) {
-      document.removeEventListener('click', el._clickOutside);
-    }
-  };
-  
   // Calculate unread count
   const unreadCount = computed(() => {
     return notifications.value.filter(notification => !notification.read).length;
   });
   
-  // Toggle dropdown visibility
-  const toggleDropdown = () => {
-    dropdownVisible.value = !dropdownVisible.value;
+  // Handle dropdown visibility change
+  const handleVisibilityChange = (visible) => {
+    dropdownVisible.value = visible;
     
     // If opening the dropdown, fetch latest notifications
-    if (dropdownVisible.value) {
+    if (visible) {
       fetchNotifications();
     }
   };
@@ -212,7 +205,6 @@
     }
     
     // Navigate to alert page 
-    // (you can add query params to highlight the specific alert)
     router.push('/alerts');
     
     // Hide dropdown
@@ -261,20 +253,7 @@
     position: relative;
   }
   
-  .dropdown-menu {
-    position: absolute;
-    top: 40px;
-    right: 0;
-    width: 350px;
-    max-height: 500px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-  }
-  
+  /* Style the dropdown menu content */
   .dropdown-header {
     padding: 12px 16px;
     border-bottom: 1px solid #f0f0f0;
@@ -289,9 +268,8 @@
   }
   
   .dropdown-content {
-    flex: 1;
-    overflow-y: auto;
     max-height: 400px;
+    overflow-y: auto;
     padding: 8px 0;
   }
   
