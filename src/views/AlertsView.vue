@@ -20,49 +20,8 @@
             </div>
           </div>
           
-          <!-- Status filter -->
-          <div class="filters">
-            <a-radio-group v-model:value="statusFilter" @change="fetchAlerts">
-              <a-radio-button value="all">All</a-radio-button>
-              <a-radio-button value="triggered">Active</a-radio-button>
-              <a-radio-button value="resolved">Resolved</a-radio-button>
-            </a-radio-group>
-            
-            <!-- Host filter - only show if there are alerts from multiple hosts -->
-            <a-select
-              v-if="uniqueHosts.length > 1"
-              v-model:value="hostFilter"
-              style="width: 200px; margin-left: 16px;"
-              placeholder="All Hosts"
-              allowClear
-              @change="fetchAlerts"
-            >
-              <a-select-option v-for="host in uniqueHosts" :key="host" :value="host">
-                {{ host }}
-              </a-select-option>
-            </a-select>
-          </div>
-          
-          <!-- Alert list -->
-          <a-table
-            :columns="columns"
-            :data-source="alerts"
-            :loading="loading"
-            rowKey="id"
-            :pagination="{ pageSize: 10 }"
-          >
-            <!-- Status column -->
-            <template #bodyCell="{ column, text, record }">
-              <template v-if="column.key === 'status'">
-                <a-tag :color="getStatusColor(text)">{{ text }}</a-tag>
-              </template>
-              
-              <!-- Time column -->
-              <template v-else-if="column.key === 'time'">
-                {{ formatTime(record.triggered_at) }}
-              </template>
-            </template>
-          </a-table>
+          <!-- Use the new alerts table component -->
+          <AlertsTable ref="alertsTableRef" @refresh="handleRefresh" />
         </div>
       </HiHello>
       
@@ -128,22 +87,22 @@
   </template>
   
   <script setup>
-  import { ref, onMounted, computed } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { PlusOutlined, SettingOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
   import HiHello from "@/components/HiHello.vue";
   import api from '@/services/api';
   import authService from '@/services/auth';
+  import AlertsTable from '@/components/AlertsTable.vue';
   
   // Router for navigation
   const router = useRouter();
   
-  // Reactive state
-  const alerts = ref([]);
-  const loading = ref(true);
-  const statusFilter = ref('all');
-  const hostFilter = ref(null);
+  // Reference to the alerts table component
+  const alertsTableRef = ref(null);
+  
+  // State for the "Add Rule" modal
   const addRuleModalVisible = ref(false);
   const addingRule = ref(false);
   const ruleFormRef = ref(null);
@@ -168,74 +127,12 @@
   // Computed properties
   const isAdmin = computed(() => authService.isAdmin());
   
-  const uniqueHosts = computed(() => {
-    const hosts = new Set();
-    alerts.value.forEach(alert => hosts.add(alert.host));
-    return Array.from(hosts);
-  });
-  
-  // Table columns
-  const columns = [
-    {
-      title: 'Host',
-      dataIndex: 'host',
-      key: 'host',
-      width: 150
-    },
-    {
-      title: 'Alert',
-      dataIndex: 'rule_name',
-      key: 'rule_name'
-    },
-    {
-      title: 'Message',
-      dataIndex: 'message',
-      key: 'message',
-      ellipsis: true
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120
-    },
-    {
-      title: 'Time',
-      key: 'time',
-      width: 150
-    }
-  ];
-  
   // Navigation function to rules page
   const navigateToRules = () => {
     router.push('/alerts/rules');
   };
   
-  // Functions
-  const fetchAlerts = async () => {
-    loading.value = true;
-    
-    try {
-      // Prepare query parameters
-      const params = {};
-      if (statusFilter.value !== 'all') {
-        params.status = statusFilter.value;
-      }
-      if (hostFilter.value) {
-        params.host = hostFilter.value;
-      }
-      
-      // Fetch alerts
-      const response = await api.getAlerts(params);
-      alerts.value = response.data;
-    } catch (error) {
-      console.error('Error fetching alerts:', error);
-      message.error('Failed to load alerts');
-    } finally {
-      loading.value = false;
-    }
-  };
-  
+  // Show modal to add a new rule
   const showAddRuleModal = () => {
     // Reset form to default values
     ruleForm.value = {
@@ -249,6 +146,7 @@
     addRuleModalVisible.value = true;
   };
   
+  // Handle rule creation
   const handleAddRule = async () => {
     try {
       // Validate form
@@ -269,8 +167,8 @@
       message.success('Alert rule created successfully');
       addRuleModalVisible.value = false;
       
-      // Refresh alerts
-      fetchAlerts();
+      // Refresh alerts table
+      alertsTableRef.value?.fetchAlerts();
     } catch (error) {
       console.error('Error creating alert rule:', error);
       message.error(error.response?.data?.error || 'Failed to create alert rule');
@@ -279,24 +177,17 @@
     }
   };
   
-  // Helper functions
-  const getStatusColor = (status) => {
-    const colors = {
-      'triggered': 'red',
-      'resolved': 'green'
-    };
-    return colors[status] || 'default';
-  };
-  
-  const formatTime = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleString();
+  // Handle refresh event from alerts table
+  const handleRefresh = () => {
+    // Any additional logic needed when alerts are refreshed
   };
   
   // Lifecycle hooks
   onMounted(() => {
-    fetchAlerts();
+    // Check if user is admin for admin-specific UI elements
+    if (!authService.isAdmin()) {
+      // You could potentially hide admin-specific elements here
+    }
   });
   </script>
   
@@ -317,12 +208,6 @@
   }
   
   .header-actions {
-    display: flex;
-    align-items: center;
-  }
-  
-  .filters {
-    margin-bottom: 20px;
     display: flex;
     align-items: center;
   }
