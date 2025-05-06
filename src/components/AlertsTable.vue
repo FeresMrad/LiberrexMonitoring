@@ -25,7 +25,7 @@
     
     <!-- Alert list -->
     <a-table
-      :columns="columns"
+      :columns="allColumns.filter(col => col.key !== 'actions' || isAdmin)"
       :data-source="alerts"
       :loading="loading"
       rowKey="id"
@@ -51,6 +51,7 @@
         <!-- Actions column - delete button -->
         <template v-else-if="column.key === 'actions'">
           <a-button 
+            v-if="isAdmin"
             type="danger" 
             size="small" 
             @click="showDeleteConfirm(record)"
@@ -62,8 +63,9 @@
       </template>
     </a-table>
 
-    <!-- Delete confirmation modal -->
+    <!-- Delete confirmation modal - only used by admins -->
     <a-modal
+      v-if="isAdmin"
       v-model:open="deleteModalVisible"
       title="Delete Alert"
       :confirmLoading="Boolean(deleteLoading)"
@@ -83,6 +85,7 @@ import { ref, computed, onMounted, defineProps, defineEmits, defineExpose } from
 import { DeleteOutlined } from '@ant-design/icons-vue';
 import api from '@/services/api';
 import { message } from 'ant-design-vue';
+import authService from '@/services/auth';
 
 // Props from parent component
 const props = defineProps({
@@ -115,6 +118,9 @@ const deleteModalVisible = ref(false);
 const deleteLoading = ref(null); // Will store alert ID during deletion
 const alertToDelete = ref(null);
 
+// Check if user is admin
+const isAdmin = computed(() => authService.isAdmin());
+
 // Computed properties
 const uniqueHosts = computed(() => {
   const hostSet = new Set();
@@ -122,8 +128,8 @@ const uniqueHosts = computed(() => {
   return Array.from(hostSet);
 });
 
-// Table columns definition
-const columns = [
+// Define all table columns
+const allColumns = [
   {
     title: 'Host',
     dataIndex: 'host',
@@ -160,6 +166,8 @@ const columns = [
     align: 'center'
   }
 ];
+
+// No longer needed since we're filtering directly in the template
 
 // Fetch alerts from the API
 const fetchAlerts = async () => {
@@ -215,14 +223,18 @@ const handleFilterChange = () => {
   fetchAlerts();
 };
 
-// Delete alert functions
+// Delete alert functions - only accessible to admins
 const showDeleteConfirm = (alert) => {
+  // Extra check to ensure only admins can delete
+  if (!isAdmin.value) return;
+  
   alertToDelete.value = alert;
   deleteModalVisible.value = true;
 };
 
 const confirmDeleteAlert = async () => {
-  if (!alertToDelete.value) return;
+  // Extra check to ensure only admins can delete
+  if (!isAdmin.value || !alertToDelete.value) return;
   
   deleteLoading.value = alertToDelete.value.id;
   
