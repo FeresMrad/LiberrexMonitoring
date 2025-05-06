@@ -292,7 +292,6 @@
     }
   }
   
-
   
   onMounted(() => {
     // Initial data fetch - last hour by default

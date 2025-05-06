@@ -42,18 +42,17 @@
               <bell-outlined />
               <span>Alerts</span>
             </a-menu-item>
-          </router-link>
-
-          <!-- Rules -->
-          <router-link to="/alerts/rules" v-if="isAdmin">
-            <a-menu-item key="alertRules">
-              <setting-outlined />
-              <span>Rules</span>
-            </a-menu-item>
-          </router-link>          
+          </router-link>        
           <!-- Admin section with groups link -->
           <template v-if="isAdmin">
             <a-divider style="margin: 8px 0; background-color: rgba(255, 255, 255, 0.2)" />
+              <!-- Rules -->
+            <router-link to="/alerts/rules" v-if="isAdmin">
+              <a-menu-item key="alertRules">
+                <setting-outlined />
+                <span>Rules</span>
+              </a-menu-item>
+            </router-link>  
             <router-link to="/admin/users">
               <a-menu-item key="users">
                 <team-outlined />
