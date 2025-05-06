@@ -1,4 +1,3 @@
-<!-- src/components/NotificationsDropdown.vue -->
 <template>
     <div class="notifications-dropdown">
       <!-- Bell icon with notification count badge -->
