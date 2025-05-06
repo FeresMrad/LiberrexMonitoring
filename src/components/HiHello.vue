@@ -35,30 +35,22 @@
               <desktop-outlined />
               <span>Entities</span>
             </a-menu-item>
+          </router-link>         
+          <!-- Alerts -->
+          <router-link to="/alerts">
+            <a-menu-item key="alertsList">
+              <bell-outlined />
+              <span>Alerts</span>
+            </a-menu-item>
           </router-link>
-          
-          <!-- Alert section with sub-items -->
-          <a-sub-menu key="alerts">
-            <template #title>
-              <span>
-                <warning-outlined />
-                <span>Alerts</span>
-              </span>
-            </template>
-            <router-link to="/alerts">
-              <a-menu-item key="alertsList">
-                <bell-outlined />
-                <span>Alert Events</span>
-              </a-menu-item>
-            </router-link>
-            <router-link to="/alerts/rules" v-if="isAdmin">
-              <a-menu-item key="alertRules">
-                <setting-outlined />
-                <span>Alert Rules</span>
-              </a-menu-item>
-            </router-link>
-          </a-sub-menu>
-          
+
+          <!-- Rules -->
+          <router-link to="/alerts/rules" v-if="isAdmin">
+            <a-menu-item key="alertRules">
+              <setting-outlined />
+              <span>Rules</span>
+            </a-menu-item>
+          </router-link>          
           <!-- Admin section with groups link -->
           <template v-if="isAdmin">
             <a-divider style="margin: 8px 0; background-color: rgba(255, 255, 255, 0.2)" />
@@ -94,7 +86,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { 
   HomeOutlined, 
   DesktopOutlined, 
-  WarningOutlined, 
   BellOutlined, 
   LogoutOutlined, 
   MenuOutlined,
