@@ -17,6 +17,7 @@ import { message } from 'ant-design-vue';
 import GroupManagementView from "./views/GroupManagementView.vue";
 import ApacheDetailsView from "./views/ApacheDetailsView.vue";
 import AlertsView from "./views/AlertsView.vue";
+import AlertsRulesView from "./views/AlertsRulesView.vue";
 
 // Authentication guard for protected routes
 const requireAuth = (to, from, next) => {
@@ -136,6 +137,11 @@ const routes = [
     path: "/admin/groups",
     component: GroupManagementView,
     beforeEnter: requireAdmin // Use admin guard for this route
+  },
+  { 
+    path: "/alerts/rules", 
+    component: AlertsRulesView, 
+    beforeEnter: requireAdmin  // Only admins can manage rules
   },
   // Redirect root to login or dashboard
   { 

@@ -2,7 +2,23 @@
     <a-layout style="min-height: 100vh">
       <HiHello>
         <div class="alerts-container">
-          <h2 class="page-title">Alerts</h2>
+          <div class="header-row">
+            <h2 class="page-title">Alert Events</h2>
+            
+            <div class="header-actions">
+              <!-- View Rules button (for admins) -->
+              <a-button v-if="isAdmin" type="default" @click="navigateToRules" style="margin-right: 10px;">
+                <template #icon><SettingOutlined /></template>
+                Manage Rules
+              </a-button>
+              
+              <!-- Add Rule button (for admins) -->
+              <a-button v-if="isAdmin" type="primary" @click="showAddRuleModal">
+                <template #icon><PlusOutlined /></template>
+                Add Rule
+              </a-button>
+            </div>
+          </div>
           
           <!-- Status filter -->
           <div class="filters">
@@ -26,14 +42,6 @@
                 {{ host }}
               </a-select-option>
             </a-select>
-            
-            <!-- Admin-only: Add Rule button -->
-            <div v-if="isAdmin" class="admin-actions">
-              <a-button type="primary" @click="showAddRuleModal">
-                <template #icon><PlusOutlined /></template>
-                Add Alert Rule
-              </a-button>
-            </div>
           </div>
           
           <!-- Alert list -->
@@ -183,11 +191,15 @@
   
   <script setup>
   import { ref, onMounted, computed } from 'vue';
-  import { PlusOutlined } from '@ant-design/icons-vue';
+  import { useRouter } from 'vue-router';
+  import { PlusOutlined, SettingOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
   import HiHello from "@/components/HiHello.vue";
   import api from '@/services/api';
   import authService from '@/services/auth';
+  
+  // Router for navigation
+  const router = useRouter();
   
   // Reactive state
   const alerts = ref([]);
@@ -277,6 +289,11 @@
       width: 150
     }
   ];
+  
+  // Navigation function to rules page
+  const navigateToRules = () => {
+    router.push('/alerts/rules');
+  };
   
   // Functions
   const fetchAlerts = async () => {
@@ -404,17 +421,25 @@
     padding: 20px;
   }
   
-  .page-title {
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
+  }
+  
+  .page-title {
+    margin: 0;
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
   }
   
   .filters {
     margin-bottom: 20px;
     display: flex;
     align-items: center;
-  }
-  
-  .admin-actions {
-    margin-left: auto;
   }
   </style>

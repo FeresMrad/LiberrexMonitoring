@@ -36,12 +36,28 @@
               <span>Entities</span>
             </a-menu-item>
           </router-link>
-          <router-link to="/alerts">
-            <a-menu-item key="alerts">
-              <warning-outlined />
-              <span>Alerts</span>
-            </a-menu-item>
-          </router-link>
+          
+          <!-- Alert section with sub-items -->
+          <a-sub-menu key="alerts">
+            <template #title>
+              <span>
+                <warning-outlined />
+                <span>Alerts</span>
+              </span>
+            </template>
+            <router-link to="/alerts">
+              <a-menu-item key="alertsList">
+                <bell-outlined />
+                <span>Alert Events</span>
+              </a-menu-item>
+            </router-link>
+            <router-link to="/alerts/rules" v-if="isAdmin">
+              <a-menu-item key="alertRules">
+                <setting-outlined />
+                <span>Alert Rules</span>
+              </a-menu-item>
+            </router-link>
+          </a-sub-menu>
           
           <!-- Admin section with groups link -->
           <template v-if="isAdmin">
@@ -83,7 +99,8 @@ import {
   LogoutOutlined, 
   MenuOutlined,
   TeamOutlined,
-  ApartmentOutlined 
+  ApartmentOutlined,
+  SettingOutlined 
 } from '@ant-design/icons-vue';
 import authService from '@/services/auth';
 import websocket from '@/services/websocket';
@@ -104,8 +121,10 @@ const updateSelectedKeys = () => {
   const pathMap = {
     "/dashboard": ["dashboard"],
     "/entities": ["entities"],
-    "/alerts": ["alerts"],
+    "/alerts": ["alerts", "alertsList"],
+    "/alerts/rules": ["alerts", "alertRules"],
     "/admin/users": ["users"],
+    "/admin/groups": ["groups"],
   };
   
   // Check if the current path or a parent path is in the pathMap
