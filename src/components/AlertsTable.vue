@@ -1,3 +1,4 @@
+<!-- src/components/AlertsTable.vue -->
 <template>
   <div class="alerts-table-container">
     <!-- Status filter -->
@@ -41,6 +42,11 @@
         <!-- Status column -->
         <template v-else-if="column.key === 'status'">
           <a-tag :color="getStatusColor(text)"> {{ text === 'triggered' ? 'Active' : text === 'resolved' ? 'Resolved' : text }}</a-tag>
+        </template>
+        
+        <!-- Message column - generate message in frontend with HTML -->
+        <template v-else-if="column.key === 'message'">
+          <span v-html="generateAlertMessage(record)"></span>
         </template>
         
         <!-- Time column -->
@@ -167,7 +173,39 @@ const allColumns = [
   }
 ];
 
-// No longer needed since we're filtering directly in the template
+// Generate alert message based on available data
+const generateAlertMessage = (alert) => {
+  // If we have all the necessary fields, generate the message
+  if (alert.metric_type && alert.host && alert.value !== undefined && 
+      alert.threshold !== undefined && alert.comparison) {
+    
+    // Format the metric name (replace dots with spaces, ALL CAPS)
+    const metricName = alert.metric_type
+      .replace('.', ' ')
+      .toUpperCase();
+    
+    // Get comparison symbol
+    const comparisonSymbol = {
+      'above': '>',
+      'below': '<',
+      'equal': '='
+    }[alert.comparison] || '≠';
+    
+    // Format the value with appropriate units
+    const value = alert.metric_type.includes('percent') ? 
+      `${alert.value}%` : alert.value.toString();
+    
+    // Format the threshold with the same units
+    const threshold = alert.metric_type.includes('percent') ? 
+      `${alert.threshold}%` : alert.threshold.toString();
+    
+    // Format the message with a cleaner approach
+    return `${metricName}: <strong>${value}</strong> ${comparisonSymbol} ${threshold}`;
+  }
+  
+  // Fallback: If we don't have all the fields, use the original message
+  return alert.message;
+};
 
 // Fetch alerts from the API
 const fetchAlerts = async () => {
@@ -280,7 +318,6 @@ defineExpose({
   fetchAlerts,
   fetchHosts
 });
-
 
 // Lifecycle hooks
 onMounted(() => {
