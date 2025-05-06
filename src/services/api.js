@@ -322,4 +322,19 @@ deleteAlertRule(ruleId) {
 deleteAlert(alertId) {
   return apiClient.delete(`/alerts/events/${alertId}`);
 },
+getNotifications() {
+  return apiClient.get('/notifications');
+},
+
+markNotificationAsRead(notificationId) {
+  return apiClient.put(`/notifications/${notificationId}/read`);
+},
+
+markAllNotificationsAsRead() {
+  return apiClient.put('/notifications/read-all');
+},
+
+deleteNotification(notificationId) {
+  return apiClient.delete(`/notifications/${notificationId}`);
+},
 };

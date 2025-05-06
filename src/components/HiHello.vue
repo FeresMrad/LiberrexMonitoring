@@ -15,7 +15,7 @@
         <span v-if="currentUser" class="user-info">
           {{ currentUser.email }}
         </span>
-        <bell-outlined class="header-icon" />
+        <NotificationsDropdown />
         <logout-outlined class="header-icon" @click="handleLogout" />
       </div>
     </a-layout-header>
@@ -94,6 +94,7 @@ import {
 } from '@ant-design/icons-vue';
 import authService from '@/services/auth';
 import websocket from '@/services/websocket';
+import NotificationsDropdown from './NotificationsDropdown.vue';
 
 const isCollapsed = ref(false);
 const route = useRoute();
