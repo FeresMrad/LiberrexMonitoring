@@ -25,7 +25,6 @@
             <a-radio-group v-model:value="statusFilter" @change="fetchAlerts">
               <a-radio-button value="all">All</a-radio-button>
               <a-radio-button value="triggered">Active</a-radio-button>
-              <a-radio-button value="acknowledged">Acknowledged</a-radio-button>
               <a-radio-button value="resolved">Resolved</a-radio-button>
             </a-radio-group>
             
@@ -52,38 +51,15 @@
             rowKey="id"
             :pagination="{ pageSize: 10 }"
           >
-            <!-- Severity column -->
+            <!-- Status column -->
             <template #bodyCell="{ column, text, record }">
-              <template v-if="column.key === 'severity'">
-                <a-tag :color="getSeverityColor(text)">{{ text.toUpperCase() }}</a-tag>
-              </template>
-              
-              <!-- Status column -->
-              <template v-else-if="column.key === 'status'">
+              <template v-if="column.key === 'status'">
                 <a-tag :color="getStatusColor(text)">{{ text }}</a-tag>
               </template>
               
               <!-- Time column -->
               <template v-else-if="column.key === 'time'">
                 {{ formatTime(record.triggered_at) }}
-              </template>
-              
-              <!-- Actions column -->
-              <template v-else-if="column.key === 'actions'">
-                <a-button 
-                  v-if="record.status === 'triggered'" 
-                  size="small" 
-                  type="primary"
-                  @click="acknowledgeAlert(record.id)"
-                >
-                  Acknowledge
-                </a-button>
-                <span v-else-if="record.status === 'acknowledged'">
-                  Acknowledged by {{ record.acknowledged_by || 'Unknown' }}
-                </span>
-                <span v-else-if="record.status === 'resolved'">
-                  Resolved at {{ formatTime(record.resolved_at) }}
-                </span>
               </template>
             </template>
           </a-table>
@@ -122,16 +98,6 @@
                 </a-select>
               </a-form-item>
             </a-col>
-            
-            <a-col :span="12">
-              <a-form-item label="Severity" name="severity">
-                <a-select v-model:value="ruleForm.severity">
-                  <a-select-option value="info">Info</a-select-option>
-                  <a-select-option value="warning">Warning</a-select-option>
-                  <a-select-option value="critical">Critical</a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
           </a-row>
           
           <a-row :gutter="16">
@@ -156,23 +122,6 @@
               </a-form-item>
             </a-col>
           </a-row>
-          
-          <a-divider>Notification Settings</a-divider>
-          
-          <a-form-item label="Email Notifications" name="email_enabled">
-            <a-switch v-model:checked="ruleForm.notifications.email_enabled" />
-          </a-form-item>
-          
-          <a-form-item 
-            v-if="ruleForm.notifications.email_enabled" 
-            label="Email Recipients" 
-            name="email_recipients"
-          >
-            <a-input 
-              v-model:value="ruleForm.notifications.email_recipients" 
-              placeholder="admin@example.com, user@example.com" 
-            />
-          </a-form-item>
         </a-form>
       </a-modal>
     </a-layout>
@@ -205,13 +154,7 @@
     description: '',
     metric_type: 'cpu.percent',
     comparison: 'above',
-    threshold: 80,
-    // Removed duration_minutes as it's no longer needed
-    severity: 'warning',
-    notifications: {
-      email_enabled: false,
-      email_recipients: ''
-    }
+    threshold: 80
   });
   
   // Form validation rules
@@ -219,8 +162,7 @@
     name: [{ required: true, message: 'Please input rule name', trigger: 'blur' }],
     metric_type: [{ required: true, message: 'Please select a metric', trigger: 'change' }],
     comparison: [{ required: true, message: 'Please select a comparison', trigger: 'change' }],
-    threshold: [{ required: true, message: 'Please input a threshold', trigger: 'change' }],
-    severity: [{ required: true, message: 'Please select a severity', trigger: 'change' }]
+    threshold: [{ required: true, message: 'Please input a threshold', trigger: 'change' }]
   };
   
   // Computed properties
@@ -234,16 +176,6 @@
   
   // Table columns
   const columns = [
-    {
-      title: 'Severity',
-      dataIndex: 'severity',
-      key: 'severity',
-      width: 100,
-      sorter: (a, b) => {
-        const order = { 'critical': 0, 'warning': 1, 'info': 2 };
-        return order[a.severity] - order[b.severity];
-      }
-    },
     {
       title: 'Host',
       dataIndex: 'host',
@@ -270,11 +202,6 @@
     {
       title: 'Time',
       key: 'time',
-      width: 150
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
       width: 150
     }
   ];
@@ -309,19 +236,6 @@
     }
   };
   
-  const acknowledgeAlert = async (alertId) => {
-    try {
-      await api.acknowledgeAlert(alertId);
-      message.success('Alert acknowledged');
-      
-      // Refresh the alerts list
-      fetchAlerts();
-    } catch (error) {
-      console.error('Error acknowledging alert:', error);
-      message.error('Failed to acknowledge alert');
-    }
-  };
-  
   const showAddRuleModal = () => {
     // Reset form to default values
     ruleForm.value = {
@@ -329,13 +243,7 @@
       description: '',
       metric_type: 'cpu.percent',
       comparison: 'above',
-      threshold: 80,
-      // Removed duration_minutes
-      severity: 'warning',
-      notifications: {
-        email_enabled: false,
-        email_recipients: ''
-      }
+      threshold: 80
     };
     
     addRuleModalVisible.value = true;
@@ -355,10 +263,7 @@
         metric_type: ruleForm.value.metric_type,
         comparison: ruleForm.value.comparison,
         threshold: ruleForm.value.threshold,
-        duration_minutes: 0, // Set to 0 since we don't need it anymore
-        severity: ruleForm.value.severity,
-        targets: [{ type: 'all', id: '*' }],
-        notifications: ruleForm.value.notifications
+        targets: [{ type: 'all', id: '*' }]
       });
       
       message.success('Alert rule created successfully');
@@ -375,19 +280,9 @@
   };
   
   // Helper functions
-  const getSeverityColor = (severity) => {
-    const colors = {
-      'info': 'blue',
-      'warning': 'orange',
-      'critical': 'red'
-    };
-    return colors[severity] || 'default';
-  };
-  
   const getStatusColor = (status) => {
     const colors = {
       'triggered': 'red',
-      'acknowledged': 'orange',
       'resolved': 'green'
     };
     return colors[status] || 'default';

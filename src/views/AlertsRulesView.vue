@@ -18,14 +18,9 @@
             rowKey="id"
             :pagination="{ pageSize: 10 }"
           >
-            <!-- Severity Column -->
+            <!-- Enabled Column -->
             <template #bodyCell="{ column, text, record }">
-              <template v-if="column.key === 'severity'">
-                <a-tag :color="getSeverityColor(text)">{{ text.toUpperCase() }}</a-tag>
-              </template>
-              
-              <!-- Enabled Column -->
-              <template v-else-if="column.key === 'enabled'">
+              <template v-if="column.key === 'enabled'">
                 <a-switch
                   :checked="text"
                   @change="(checked) => toggleRuleStatus(record.id, checked)"
@@ -107,16 +102,6 @@
                   </a-select>
                 </a-form-item>
               </a-col>
-              
-              <a-col :span="12">
-                <a-form-item label="Severity" name="severity">
-                  <a-select v-model:value="ruleForm.severity">
-                    <a-select-option value="info">Info</a-select-option>
-                    <a-select-option value="warning">Warning</a-select-option>
-                    <a-select-option value="critical">Critical</a-select-option>
-                  </a-select>
-                </a-form-item>
-              </a-col>
             </a-row>
             
             <a-row :gutter="16">
@@ -164,23 +149,6 @@
                 </a-select-option>
               </a-select>
             </a-form-item>
-            
-            <a-divider>Notification Settings</a-divider>
-            
-            <a-form-item label="Email Notifications" name="email_enabled">
-              <a-switch v-model:checked="ruleForm.notifications.email_enabled" />
-            </a-form-item>
-            
-            <a-form-item 
-              v-if="ruleForm.notifications.email_enabled" 
-              label="Email Recipients" 
-              name="email_recipients"
-            >
-              <a-input 
-                v-model:value="ruleForm.notifications.email_recipients" 
-                placeholder="admin@example.com, user@example.com" 
-              />
-            </a-form-item>
           </a-form>
         </a-modal>
       </HiHello>
@@ -221,13 +189,7 @@
     description: '',
     metric_type: 'cpu.percent',
     comparison: 'above',
-    threshold: 80,
-    // Removed duration_minutes
-    severity: 'warning',
-    notifications: {
-      email_enabled: false,
-      email_recipients: ''
-    }
+    threshold: 80
   });
   
   // Form validation rules
@@ -235,11 +197,10 @@
     name: [{ required: true, message: 'Please input rule name', trigger: 'blur' }],
     metric_type: [{ required: true, message: 'Please select a metric', trigger: 'change' }],
     comparison: [{ required: true, message: 'Please select a comparison', trigger: 'change' }],
-    threshold: [{ required: true, message: 'Please input a threshold', trigger: 'change' }],
-    severity: [{ required: true, message: 'Please select a severity', trigger: 'change' }]
+    threshold: [{ required: true, message: 'Please input a threshold', trigger: 'change' }]
   };
   
-  // Table columns - Removed the 'Duration' column
+  // Table columns
   const columns = [
     {
       title: 'Rule Name',
@@ -266,21 +227,15 @@
       width: 100
     },
     {
-      title: 'Severity',
-      dataIndex: 'severity',
-      key: 'severity',
-      width: 100,
-      filters: [
-        { text: 'Info', value: 'info' },
-        { text: 'Warning', value: 'warning' },
-        { text: 'Critical', value: 'critical' }
-      ],
-      onFilter: (value, record) => record.severity === value
-    },
-    {
       title: 'Targets',
       key: 'targets',
       width: 100
+    },
+    {
+      title: 'Enabled',
+      dataIndex: 'enabled',
+      key: 'enabled',
+      width: 90
     },
     {
       title: 'Actions',
@@ -310,16 +265,6 @@
     return metricType.replace('.', ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase());
   };
   
-  // Get color for severity tag
-  const getSeverityColor = (severity) => {
-    const colors = {
-      'info': 'blue',
-      'warning': 'orange',
-      'critical': 'red'
-    };
-    return colors[severity] || 'default';
-  };
-  
   // Check if targets include wildcard (all hosts)
   const hasWildcardTarget = (targets) => {
     return targets.some(target => target.target_type === 'all' || target.target_id === '*');
@@ -338,13 +283,7 @@
       description: '',
       metric_type: 'cpu.percent',
       comparison: 'above',
-      threshold: 80,
-      // Removed duration_minutes
-      severity: 'warning',
-      notifications: {
-        email_enabled: false,
-        email_recipients: ''
-      }
+      threshold: 80
     };
     
     // Fetch hosts for targeting
@@ -364,13 +303,7 @@
       description: rule.description || '',
       metric_type: rule.metric_type,
       comparison: rule.comparison,
-      threshold: rule.threshold,
-      // Removed duration_minutes
-      severity: rule.severity,
-      notifications: {
-        email_enabled: rule.notifications?.email_enabled || false,
-        email_recipients: rule.notifications?.email_recipients || ''
-      }
+      threshold: rule.threshold
     };
     
     // Determine target selection mode
@@ -482,10 +415,7 @@
         metric_type: ruleForm.value.metric_type,
         comparison: ruleForm.value.comparison,
         threshold: ruleForm.value.threshold,
-        duration_minutes: 0, // Set to 0 since we don't need it anymore
-        severity: ruleForm.value.severity,
-        targets: targets,
-        notifications: ruleForm.value.notifications
+        targets: targets
       };
       
       if (editingRule.value) {
