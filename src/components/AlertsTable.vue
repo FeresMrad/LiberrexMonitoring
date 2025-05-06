@@ -31,6 +31,7 @@
       :loading="loading"
       rowKey="id"
       :pagination="{ pageSize: 10 }"
+      size="small"
     >
       <!-- Custom cell rendering for columns -->
       <template #bodyCell="{ column, text, record }">
