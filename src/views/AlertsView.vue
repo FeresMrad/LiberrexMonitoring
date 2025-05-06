@@ -3,7 +3,7 @@
       <HiHello>
         <div class="alerts-container">
           <div class="header-row">
-            <h2 class="page-title">Alert Events</h2>
+            <h2 class="page-title">Alerts</h2>
             
             <div class="header-actions">
               <!-- View Rules button (for admins) -->
