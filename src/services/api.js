@@ -318,5 +318,8 @@ updateAlertRule(ruleId, ruleData) {
 
 deleteAlertRule(ruleId) {
   return apiClient.delete(`/alerts/rules/${ruleId}`);
-}
+},
+deleteAlert(alertId) {
+  return apiClient.delete(`/alerts/events/${alertId}`);
+},
 };
