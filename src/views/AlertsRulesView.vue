@@ -47,11 +47,6 @@
                 <a-tag color="blue">{{ formatMetricType(text) }}</a-tag>
               </template>
               
-              <!-- Duration Column -->
-              <template v-else-if="column.key === 'duration'">
-                {{ text }} min
-              </template>
-              
               <!-- Targets Column -->
               <template v-else-if="column.key === 'targets'">
                 <span v-if="hasWildcardTarget(record.targets)">All Hosts</span>
@@ -80,7 +75,7 @@
           </a-table>
         </div>
         
-        <!-- Rule Form Modal (same as in AlertsView.vue) -->
+        <!-- Rule Form Modal -->
         <a-modal
           v-model:open="ruleModalVisible"
           :title="editingRule ? 'Edit Alert Rule' : 'Add Alert Rule'"
@@ -125,7 +120,7 @@
             </a-row>
             
             <a-row :gutter="16">
-              <a-col :span="8">
+              <a-col :span="12">
                 <a-form-item label="Comparison" name="comparison">
                   <a-select v-model:value="ruleForm.comparison">
                     <a-select-option value="above">Above</a-select-option>
@@ -135,23 +130,12 @@
                 </a-form-item>
               </a-col>
               
-              <a-col :span="8">
+              <a-col :span="12">
                 <a-form-item label="Threshold" name="threshold">
                   <a-input-number 
                     v-model:value="ruleForm.threshold" 
                     :min="0" 
                     :max="100" 
-                    style="width: 100%"
-                  />
-                </a-form-item>
-              </a-col>
-              
-              <a-col :span="8">
-                <a-form-item label="Duration (minutes)" name="duration_minutes">
-                  <a-input-number 
-                    v-model:value="ruleForm.duration_minutes" 
-                    :min="0" 
-                    :max="60" 
                     style="width: 100%"
                   />
                 </a-form-item>
@@ -238,7 +222,7 @@
     metric_type: 'cpu.percent',
     comparison: 'above',
     threshold: 80,
-    duration_minutes: 5,
+    // Removed duration_minutes
     severity: 'warning',
     notifications: {
       email_enabled: false,
@@ -255,7 +239,7 @@
     severity: [{ required: true, message: 'Please select a severity', trigger: 'change' }]
   };
   
-  // Table columns
+  // Table columns - Removed the 'Duration' column
   const columns = [
     {
       title: 'Rule Name',
@@ -279,12 +263,6 @@
       title: 'Threshold',
       dataIndex: 'threshold',
       key: 'threshold',
-      width: 100
-    },
-    {
-      title: 'Duration',
-      dataIndex: 'duration_minutes',
-      key: 'duration',
       width: 100
     },
     {
@@ -347,7 +325,6 @@
     return targets.some(target => target.target_type === 'all' || target.target_id === '*');
   };
   
-  
   // Show modal to add a new rule
   const showAddRuleModal = async () => {
     editingRule.value = false;
@@ -362,7 +339,7 @@
       metric_type: 'cpu.percent',
       comparison: 'above',
       threshold: 80,
-      duration_minutes: 5,
+      // Removed duration_minutes
       severity: 'warning',
       notifications: {
         email_enabled: false,
@@ -388,7 +365,7 @@
       metric_type: rule.metric_type,
       comparison: rule.comparison,
       threshold: rule.threshold,
-      duration_minutes: rule.duration_minutes,
+      // Removed duration_minutes
       severity: rule.severity,
       notifications: {
         email_enabled: rule.notifications?.email_enabled || false,
@@ -460,6 +437,28 @@
     }
   };
   
+  // Toggle rule status (enabled/disabled)
+  const toggleRuleStatus = async (ruleId, enabled) => {
+    toggleLoading.value = ruleId;
+    
+    try {
+      await api.updateAlertRule(ruleId, { enabled });
+      
+      // Update local state
+      const ruleIndex = rules.value.findIndex(rule => rule.id === ruleId);
+      if (ruleIndex !== -1) {
+        rules.value[ruleIndex].enabled = enabled;
+      }
+      
+      message.success(`Rule ${enabled ? 'enabled' : 'disabled'} successfully`);
+    } catch (error) {
+      console.error('Error toggling rule status:', error);
+      message.error('Failed to update rule status');
+    } finally {
+      toggleLoading.value = null;
+    }
+  };
+  
   // Handle form submission
   const handleRuleModalOk = async () => {
     try {
@@ -483,7 +482,7 @@
         metric_type: ruleForm.value.metric_type,
         comparison: ruleForm.value.comparison,
         threshold: ruleForm.value.threshold,
-        duration_minutes: ruleForm.value.duration_minutes,
+        duration_minutes: 0, // Set to 0 since we don't need it anymore
         severity: ruleForm.value.severity,
         targets: targets,
         notifications: ruleForm.value.notifications

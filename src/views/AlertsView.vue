@@ -135,7 +135,7 @@
           </a-row>
           
           <a-row :gutter="16">
-            <a-col :span="8">
+            <a-col :span="12">
               <a-form-item label="Comparison" name="comparison">
                 <a-select v-model:value="ruleForm.comparison">
                   <a-select-option value="above">Above</a-select-option>
@@ -145,23 +145,12 @@
               </a-form-item>
             </a-col>
             
-            <a-col :span="8">
+            <a-col :span="12">
               <a-form-item label="Threshold" name="threshold">
                 <a-input-number 
                   v-model:value="ruleForm.threshold" 
                   :min="0" 
                   :max="100" 
-                  style="width: 100%"
-                />
-              </a-form-item>
-            </a-col>
-            
-            <a-col :span="8">
-              <a-form-item label="Duration (minutes)" name="duration_minutes">
-                <a-input-number 
-                  v-model:value="ruleForm.duration_minutes" 
-                  :min="0" 
-                  :max="60" 
                   style="width: 100%"
                 />
               </a-form-item>
@@ -217,7 +206,7 @@
     metric_type: 'cpu.percent',
     comparison: 'above',
     threshold: 80,
-    duration_minutes: 5,
+    // Removed duration_minutes as it's no longer needed
     severity: 'warning',
     notifications: {
       email_enabled: false,
@@ -341,7 +330,7 @@
       metric_type: 'cpu.percent',
       comparison: 'above',
       threshold: 80,
-      duration_minutes: 5,
+      // Removed duration_minutes
       severity: 'warning',
       notifications: {
         email_enabled: false,
@@ -366,7 +355,7 @@
         metric_type: ruleForm.value.metric_type,
         comparison: ruleForm.value.comparison,
         threshold: ruleForm.value.threshold,
-        duration_minutes: ruleForm.value.duration_minutes,
+        duration_minutes: 0, // Set to 0 since we don't need it anymore
         severity: ruleForm.value.severity,
         targets: [{ type: 'all', id: '*' }],
         notifications: ruleForm.value.notifications
