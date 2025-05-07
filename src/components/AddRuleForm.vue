@@ -89,12 +89,6 @@
               <a-form-item name="emailNotification" noStyle>
                 <a-checkbox v-model:checked="emailEnabled">
                   Email Notifications
-                  <a-tooltip>
-                    <template #title>
-                      Enables Warning severity (Email alerts)
-                    </template>
-                    <info-circle-outlined style="margin-left: 4px;" />
-                  </a-tooltip>
                 </a-checkbox>
               </a-form-item>
               
@@ -105,24 +99,10 @@
                   @change="handleSmsChange"
                 >
                   SMS Notifications
-                  <a-tooltip>
-                    <template #title>
-                      Enables Critical severity (Email + SMS alerts)
-                    </template>
-                    <info-circle-outlined style="margin-left: 4px;" />
-                  </a-tooltip>
                 </a-checkbox>
               </a-form-item>
             </div>
           </a-form-item>
-          
-          <!-- Show derived severity as info text -->
-          <a-alert
-            :message="`This alert will have ${derivedSeverity.toUpperCase()} severity`"
-            :type="getSeverityType(derivedSeverity)"
-            show-icon
-            style="margin-bottom: 16px;"
-          />
           
         </a-form>
       </a-modal>
@@ -130,9 +110,8 @@
   </template>
   
   <script setup>
-  import { ref, watch, computed, defineProps, defineEmits, defineExpose } from 'vue';
+  import { ref, watch, defineProps, defineEmits, defineExpose } from 'vue';
   import { message } from 'ant-design-vue';
-  import { InfoCircleOutlined } from '@ant-design/icons-vue';
   import api from '@/services/api';
   
   // Define props
@@ -169,23 +148,6 @@
   // New notification state
   const emailEnabled = ref(false);
   const smsEnabled = ref(false);
-  
-  // Computed property for derived severity
-  const derivedSeverity = computed(() => {
-    if (smsEnabled.value) return 'critical';
-    if (emailEnabled.value) return 'warning';
-    return 'info';
-  });
-  
-  // Helper for alert type
-  const getSeverityType = (severity) => {
-    const types = {
-      'info': 'info',
-      'warning': 'warning',
-      'critical': 'error'
-    };
-    return types[severity] || 'info';
-  };
   
   // Hosts data for specific targeting
   const availableHosts = ref([]);
