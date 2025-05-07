@@ -81,14 +81,58 @@
               </a-select-option>
             </a-select>
           </a-form-item>
+          
+          <a-divider>Notifications</a-divider>
+          
+          <a-form-item label="Notification Methods">
+            <div class="notification-options">
+              <a-form-item name="emailNotification" noStyle>
+                <a-checkbox v-model:checked="emailEnabled">
+                  Email Notifications
+                  <a-tooltip>
+                    <template #title>
+                      Enables Warning severity (Email alerts)
+                    </template>
+                    <info-circle-outlined style="margin-left: 4px;" />
+                  </a-tooltip>
+                </a-checkbox>
+              </a-form-item>
+              
+              <a-form-item name="smsNotification" noStyle style="margin-left: 16px;">
+                <a-checkbox 
+                  v-model:checked="smsEnabled" 
+                  :disabled="!emailEnabled"
+                  @change="handleSmsChange"
+                >
+                  SMS Notifications
+                  <a-tooltip>
+                    <template #title>
+                      Enables Critical severity (Email + SMS alerts)
+                    </template>
+                    <info-circle-outlined style="margin-left: 4px;" />
+                  </a-tooltip>
+                </a-checkbox>
+              </a-form-item>
+            </div>
+          </a-form-item>
+          
+          <!-- Show derived severity as info text -->
+          <a-alert
+            :message="`This alert will have ${derivedSeverity.toUpperCase()} severity`"
+            :type="getSeverityType(derivedSeverity)"
+            show-icon
+            style="margin-bottom: 16px;"
+          />
+          
         </a-form>
       </a-modal>
     </div>
   </template>
   
   <script setup>
-  import { ref, watch, defineProps, defineEmits, defineExpose } from 'vue';
+  import { ref, watch, computed, defineProps, defineEmits, defineExpose } from 'vue';
   import { message } from 'ant-design-vue';
+  import { InfoCircleOutlined } from '@ant-design/icons-vue';
   import api from '@/services/api';
   
   // Define props
@@ -122,6 +166,27 @@
     threshold: 80
   });
   
+  // New notification state
+  const emailEnabled = ref(false);
+  const smsEnabled = ref(false);
+  
+  // Computed property for derived severity
+  const derivedSeverity = computed(() => {
+    if (smsEnabled.value) return 'critical';
+    if (emailEnabled.value) return 'warning';
+    return 'info';
+  });
+  
+  // Helper for alert type
+  const getSeverityType = (severity) => {
+    const types = {
+      'info': 'info',
+      'warning': 'warning',
+      'critical': 'error'
+    };
+    return types[severity] || 'info';
+  };
+  
   // Hosts data for specific targeting
   const availableHosts = ref([]);
   const hostsLoading = ref(false);
@@ -143,6 +208,13 @@
     }
   });
   
+  // Ensure SMS is only enabled if email is enabled
+  const handleSmsChange = (checked) => {
+    if (checked && !emailEnabled.value) {
+      emailEnabled.value = true;
+    }
+  };
+  
   // Set rule data for editing
   const setRuleForEditing = (rule) => {
     if (!rule) return;
@@ -158,6 +230,10 @@
       comparison: rule.comparison,
       threshold: rule.threshold
     };
+    
+    // Set notification options based on existing settings & severity
+    emailEnabled.value = rule.notifications?.email_enabled || rule.severity === 'warning' || rule.severity === 'critical';
+    smsEnabled.value = rule.notifications?.sms_enabled || rule.severity === 'critical';
     
     // Determine target selection mode
     if (hasWildcardTarget(rule.targets)) {
@@ -208,6 +284,8 @@
     selectedHosts.value = [];
     currentRuleId.value = null;
     isEditing.value = false;
+    emailEnabled.value = false;
+    smsEnabled.value = false;
   };
   
   // Fetch available hosts for targeting
@@ -253,7 +331,12 @@
         metric_type: ruleForm.value.metric_type,
         comparison: ruleForm.value.comparison,
         threshold: ruleForm.value.threshold,
-        targets: targets
+        targets: targets,
+        // Add notification settings to determine severity
+        notifications: {
+          email_enabled: emailEnabled.value,
+          sms_enabled: smsEnabled.value
+        }
       };
       
       let result;
@@ -309,3 +392,10 @@
     showModalForEdit
   });
   </script>
+  
+  <style scoped>
+  .notification-options {
+    display: flex;
+    align-items: center;
+  }
+  </style>
