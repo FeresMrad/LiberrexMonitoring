@@ -40,7 +40,7 @@ const connect = () => {
   // Create with explicit Socket.IO configuration
   socket = io({
     path: socket_path,
-    transports: ['websocket', 'polling'], // Try WebSocket first, fall back to polling
+    transports: ['websocket'], // Try WebSocket first, fall back to polling
     reconnection: true,
     reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
     reconnectionDelay: 1000,
