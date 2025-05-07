@@ -51,7 +51,7 @@
                       <div class="notification-content">
                         <div class="notification-title">
                           {{ notification.title }}
-                          <span class="notification-host">{{ notification.host }}</span>
+                          <span class="notification-host">{{ getHostDisplayName(notification.host) }}</span>
                         </div>
                         <div class="notification-message" v-html="generateNotificationMessage(notification)"></div>
                         <div class="notification-time">{{ formatTime(notification.time) }}</div>
@@ -98,7 +98,27 @@
   const notifications = ref([]);
   const loading = ref(false);
   const markingAllRead = ref(false);
-  
+  const hosts = ref([]);
+  const hostsMap = ref({});
+
+  const fetchHosts = async () => {
+    try {
+        const response = await api.getHosts();
+        hosts.value = response.data;
+        
+        // Create a map of host ID to custom name for quick lookup
+        hostsMap.value = response.data.reduce((map, host) => {
+        map[host.name] = host.customName || host.name;
+        return map;
+        }, {});
+    } catch (error) {
+        console.error('Error fetching hosts:', error);
+    }
+    };
+
+    const getHostDisplayName = (hostId) => {
+  return hostsMap.value[hostId] || hostId;
+};
   // Calculate unread count
   const unreadCount = computed(() => {
     return notifications.value.filter(notification => !notification.read).length;
@@ -266,6 +286,7 @@ const generateNotificationMessage = (notification) => {
     // Initial fetch if authenticated
     if (authService.isAuthenticated.value) {
       fetchNotifications();
+      fetchHosts();
     }
     
     // Listen for alert notifications via WebSocket
