@@ -30,7 +30,7 @@
       :data-source="alerts"
       :loading="loading"
       rowKey="id"
-      :pagination="{ pageSize: 10 }"
+      :pagination="{ pageSize: 25 }"
       size="small"
     >
       <!-- Custom cell rendering for columns -->

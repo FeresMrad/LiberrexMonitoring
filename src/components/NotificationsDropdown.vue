@@ -53,7 +53,7 @@
                           {{ notification.title }}
                           <span class="notification-host">{{ notification.host }}</span>
                         </div>
-                        <div class="notification-message" v-html="notification.message"></div>
+                        <div class="notification-message" v-html="generateNotificationMessage(notification)"></div>
                         <div class="notification-time">{{ formatTime(notification.time) }}</div>
                       </div>
                       <div class="notification-actions">
@@ -210,20 +210,57 @@
     // Hide dropdown
     hideDropdown();
   };
+
+  // Generate notification message based on available data
+const generateNotificationMessage = (notification) => {
+  // If we have all the necessary fields, generate the message
+  if (notification.metric_type && notification.host && notification.value !== undefined && 
+      notification.threshold !== undefined && notification.comparison) {
+    
+    // Format the metric name (replace dots with spaces, ALL CAPS)
+    const metricName = notification.metric_type
+      .replace('.', ' ')
+      .toUpperCase();
+    
+    // Get comparison symbol
+    const comparisonSymbol = {
+      'above': '>',
+      'below': '<',
+      'equal': '='
+    }[notification.comparison] || '≠';
+    
+    // Format the value with appropriate units
+    const value = notification.metric_type.includes('percent') ? 
+      `${notification.value}%` : notification.value.toString();
+    
+    // Format the threshold with the same units
+    const threshold = notification.metric_type.includes('percent') ? 
+      `${notification.threshold}%` : notification.threshold.toString();
+    
+    // Format the message with a cleaner approach
+    return `${metricName}: <strong>${value}</strong> ${comparisonSymbol} ${threshold}`;
+  }
+  
+  // Fallback: If we don't have all the fields, use the original message
+  return notification.message;
+};
   
   // Handle WebSocket alert notification
   const handleAlertNotification = (data) => {
-    // Add new notification to the top of the list
-    notifications.value.unshift({
-      id: data.id,
-      title: data.rule_name,
-      message: data.message,
-      severity: data.severity || 'info',
-      host: data.host,
-      time: data.triggered_at,
-      read: false
-    });
-  };
+  notifications.value.unshift({
+    id: data.id,
+    title: data.rule_name,
+    message: data.message, // Keep for fallback
+    severity: data.severity || 'info',
+    host: data.host,
+    time: data.triggered_at,
+    read: false,
+    metric_type: data.metric_type,
+    comparison: data.comparison,
+    threshold: data.threshold,
+    value: data.value
+  });
+};
   
   onMounted(() => {
     // Initial fetch if authenticated
