@@ -59,9 +59,19 @@
             </a-col>
           </a-row>
           
+          <a-form-item label="Duration" name="breach_duration">
+            <a-select v-model:value="ruleForm.breach_duration">
+              <a-select-option :value="0">Immediately</a-select-option>
+              <a-select-option :value="1">1 minute</a-select-option>
+              <a-select-option :value="2">2 minutes</a-select-option>
+              <a-select-option :value="5">5 minutes</a-select-option>
+              <a-select-option :value="10">10 minutes</a-select-option>
+            </a-select>
+          </a-form-item>
+          
           <a-divider>Target Hosts</a-divider>
           
-          <a-form-item label="Target Selection" name="target_selection">
+          <a-form-item name="target_selection">
             <a-radio-group v-model:value="targetSelection" @change="handleTargetChange">
               <a-radio value="all">All Hosts</a-radio>
               <a-radio value="specific">Specific Hosts</a-radio>
@@ -84,7 +94,7 @@
           
           <a-divider>Notifications</a-divider>
           
-          <a-form-item label="Notification Methods">
+          <a-form-item>
             <div class="notification-options">
               <a-form-item name="emailNotification" noStyle>
                 <a-checkbox v-model:checked="emailEnabled">
@@ -110,7 +120,7 @@
   </template>
   
   <script setup>
-  import { ref, watch, defineProps, defineEmits, defineExpose } from 'vue';
+  import { ref, watch, computed, defineProps, defineEmits, defineExpose } from 'vue';
   import { message } from 'ant-design-vue';
   import api from '@/services/api';
   
@@ -142,7 +152,8 @@
     description: '',
     metric_type: 'cpu.percent',
     comparison: 'above',
-    threshold: 80
+    threshold: 80,
+    breach_duration: 0 // New field - default to 0 (immediate)
   });
   
   // New notification state
@@ -154,6 +165,11 @@
   const hostsLoading = ref(false);
   const selectedHosts = ref([]);
   const targetSelection = ref('all');
+  
+  // Computed property for converting between duration and breach count
+  const breachCountFromDuration = computed(() => {
+    return Math.ceil(ruleForm.value.breach_duration * 2); // 1 minute = 2 entries (30 seconds each)
+  });
   
   // Form validation rules
   const ruleFormRules = {
@@ -184,13 +200,17 @@
     // Store the rule ID
     currentRuleId.value = rule.id;
     
+    // Calculate breach duration from duration_minutes (min_breach_count)
+    const breachDuration = rule.duration_minutes ? rule.duration_minutes / 2 : 0;
+    
     // Update form with rule data
     ruleForm.value = {
       name: rule.name,
       description: rule.description || '',
       metric_type: rule.metric_type,
       comparison: rule.comparison,
-      threshold: rule.threshold
+      threshold: rule.threshold,
+      breach_duration: breachDuration
     };
     
     // Set notification options based on existing settings & severity
@@ -240,7 +260,8 @@
       description: '',
       metric_type: 'cpu.percent',
       comparison: 'above',
-      threshold: 80
+      threshold: 80,
+      breach_duration: 0
     };
     targetSelection.value = 'all';
     selectedHosts.value = [];
@@ -286,7 +307,7 @@
         targets = selectedHosts.value.map(hostId => ({ type: 'host', id: hostId }));
       }
       
-      // Create data object
+      // Create data object with breach count from duration
       const ruleData = {
         name: ruleForm.value.name,
         description: ruleForm.value.description,
@@ -294,10 +315,12 @@
         comparison: ruleForm.value.comparison,
         threshold: ruleForm.value.threshold,
         targets: targets,
+        min_breach_count: breachCountFromDuration.value,
         // Add notification settings to determine severity
         notifications: {
           email_enabled: emailEnabled.value,
-          sms_enabled: smsEnabled.value
+          sms_enabled: smsEnabled.value,
+          email_recipients: ''  // Will be configured in backend
         }
       };
       
