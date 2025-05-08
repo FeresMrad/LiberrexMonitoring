@@ -67,8 +67,63 @@
               <a-select-option :value="5">5 minutes</a-select-option>
               <a-select-option :value="10">10 minutes</a-select-option>
             </a-select>
+            <div class="field-help">Time duration before alert is triggered</div>
           </a-form-item>
           
+          
+          
+          <a-divider>Notifications</a-divider>
+          
+          <a-form-item>
+            <div class="notification-options">
+              <a-form-item name="emailNotification" noStyle>
+                <a-checkbox v-model:checked="emailEnabled" @change="handleEmailEnabledChange">
+                  Email Notifications
+                </a-checkbox>
+              </a-form-item>
+              
+              
+            </div>
+            
+            <!-- Conditional email threshold fields -->
+            <div v-if="emailEnabled" class="email-threshold-options">
+              <a-row :gutter="16">
+                <a-col :span="12">
+                  <a-form-item label="Email Threshold" name="email_threshold">
+                    <a-input-number 
+                      v-model:value="ruleForm.email_threshold" 
+                      :min="0" 
+                      :max="100" 
+                      style="width: 100%"
+                    />
+                    <div class="field-help">Leave empty to use the same threshold as above</div>
+                  </a-form-item>
+                </a-col>
+                
+                <a-col :span="12">
+                  <a-form-item label="Email Duration" name="email_duration">
+                    <a-select v-model:value="ruleForm.email_duration">
+                      <a-select-option :value="0">Immediately</a-select-option>
+                      <a-select-option :value="1">1 minute</a-select-option>
+                      <a-select-option :value="2">2 minutes</a-select-option>
+                      <a-select-option :value="5">5 minutes</a-select-option>
+                      <a-select-option :value="10">10 minutes</a-select-option>
+                    </a-select>
+                    <div class="field-help">Minimum duration before sending email</div>
+                  </a-form-item>
+                </a-col>
+              </a-row>
+            </div>
+          </a-form-item>
+              <a-form-item name="smsNotification" noStyle style="margin-left: 16px;">
+                <a-checkbox 
+                  v-model:checked="smsEnabled" 
+                  :disabled="!emailEnabled"
+                  @change="handleSmsChange"
+                >
+                  SMS Notifications
+                </a-checkbox>
+              </a-form-item>
           <a-divider>Target Hosts</a-divider>
           
           <a-form-item name="target_selection">
@@ -91,29 +146,6 @@
               </a-select-option>
             </a-select>
           </a-form-item>
-          
-          <a-divider>Notifications</a-divider>
-          
-          <a-form-item>
-            <div class="notification-options">
-              <a-form-item name="emailNotification" noStyle>
-                <a-checkbox v-model:checked="emailEnabled">
-                  Email Notifications
-                </a-checkbox>
-              </a-form-item>
-              
-              <a-form-item name="smsNotification" noStyle style="margin-left: 16px;">
-                <a-checkbox 
-                  v-model:checked="smsEnabled" 
-                  :disabled="!emailEnabled"
-                  @change="handleSmsChange"
-                >
-                  SMS Notifications
-                </a-checkbox>
-              </a-form-item>
-            </div>
-          </a-form-item>
-          
         </a-form>
       </a-modal>
     </div>
@@ -153,10 +185,12 @@
     metric_type: 'cpu.percent',
     comparison: 'above',
     threshold: 80,
-    breach_duration: 0 // New field - default to 0 (immediate)
+    breach_duration: 0, // Default to immediate
+    email_threshold: null, // New field for email threshold
+    email_duration: 0     // New field for email duration
   });
   
-  // New notification state
+  // Notification state
   const emailEnabled = ref(false);
   const smsEnabled = ref(false);
   
@@ -169,6 +203,11 @@
   // Computed property for converting between duration and breach count
   const breachCountFromDuration = computed(() => {
     return Math.ceil(ruleForm.value.breach_duration * 2); // 1 minute = 2 entries (30 seconds each)
+  });
+  
+  // Computed property for converting between email duration and breach count
+  const emailBreachCountFromDuration = computed(() => {
+    return Math.ceil(ruleForm.value.email_duration * 2); // 1 minute = 2 entries (30 seconds each)
   });
   
   // Form validation rules
@@ -185,6 +224,16 @@
       setRuleForEditing(newRule);
     }
   });
+  
+  // Handle email enabled state change
+  const handleEmailEnabledChange = (checked) => {
+    if (checked) {
+      // Set default email threshold = main threshold if not already set
+      if (ruleForm.value.email_threshold === null) {
+        ruleForm.value.email_threshold = ruleForm.value.threshold;
+      }
+    }
+  };
   
   // Ensure SMS is only enabled if email is enabled
   const handleSmsChange = (checked) => {
@@ -203,6 +252,9 @@
     // Calculate breach duration from duration_minutes (min_breach_count)
     const breachDuration = rule.duration_minutes ? rule.duration_minutes / 2 : 0;
     
+    // Calculate email breach duration from email_duration_minutes
+    const emailDuration = rule.email_duration_minutes ? rule.email_duration_minutes / 2 : 0;
+    
     // Update form with rule data
     ruleForm.value = {
       name: rule.name,
@@ -210,7 +262,9 @@
       metric_type: rule.metric_type,
       comparison: rule.comparison,
       threshold: rule.threshold,
-      breach_duration: breachDuration
+      breach_duration: breachDuration,
+      email_threshold: rule.email_threshold || null,
+      email_duration: emailDuration
     };
     
     // Set notification options based on existing settings & severity
@@ -261,7 +315,9 @@
       metric_type: 'cpu.percent',
       comparison: 'above',
       threshold: 80,
-      breach_duration: 0
+      breach_duration: 0,
+      email_threshold: null,
+      email_duration: 0
     };
     targetSelection.value = 'all';
     selectedHosts.value = [];
@@ -316,6 +372,13 @@
         threshold: ruleForm.value.threshold,
         targets: targets,
         min_breach_count: breachCountFromDuration.value,
+        
+        // Add new email threshold and duration if email is enabled
+        ...(emailEnabled.value && {
+          email_threshold: ruleForm.value.email_threshold,
+          email_duration_minutes: emailBreachCountFromDuration.value
+        }),
+        
         // Add notification settings to determine severity
         notifications: {
           email_enabled: emailEnabled.value,
@@ -381,6 +444,21 @@
   <style scoped>
   .notification-options {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .email-threshold-options {
+    margin-top: 10px;
+    padding: 10px;
+    border-left: 2px solid #1890ff;
+    background-color: #f0f8ff;
+    border-radius: 4px;
+  }
+  
+  .field-help {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
   }
   </style>
