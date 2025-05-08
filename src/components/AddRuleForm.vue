@@ -1,4 +1,3 @@
-<!-- src/components/AddRuleForm.vue -->
 <template>
     <div>
       <!-- Rule Form Modal -->
