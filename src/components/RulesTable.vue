@@ -52,7 +52,7 @@
                 size="small"
                 @click="deleteRule(record.id)"
                 >
-                <template #icon>
+                <template>
                     <DeleteOutlined />
                 </template>
                 </a-button>
@@ -155,7 +155,6 @@
       title: 'Actions',
       key: 'actions',
       width: 120,
-      fixed: 'right'
     }
   ];
   
