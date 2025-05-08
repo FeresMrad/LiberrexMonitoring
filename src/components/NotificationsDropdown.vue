@@ -54,15 +54,9 @@
                           <span class="notification-host">{{ getHostDisplayName(notification.host) }}</span>
                         </div>
                         <div class="notification-message" v-html="generateNotificationMessage(notification)"></div>
-                        <div class="notification-time">{{ formatTime(notification.time) }}</div>
+                        <div class="notification-time">{{ formatTime(notification.created_at || notification.triggered_at) }}</div>
                       </div>
-                      <div class="notification-actions">
-                        <check-outlined 
-                          v-if="!notification.read" 
-                          @click.stop="markAsRead(notification.id)" 
-                          title="Mark as read"
-                        />
-                      </div>
+                      <!-- Removed the notification-actions div with the checkmark here -->
                     </div>
                   </a-list-item>
                 </a-list>
@@ -87,7 +81,6 @@
     WarningOutlined,
     ExclamationOutlined,
     InfoCircleOutlined,
-    CheckOutlined
   } from '@ant-design/icons-vue';
   import websocket from '@/services/websocket';
   import authService from '@/services/auth';
@@ -398,12 +391,6 @@ const generateNotificationMessage = (notification) => {
   .notification-time {
     font-size: 12px;
     color: #999;
-  }
-  
-  .notification-actions {
-    display: flex;
-    align-items: center;
-    color: #1890ff;
   }
   
   .notification-unread {
