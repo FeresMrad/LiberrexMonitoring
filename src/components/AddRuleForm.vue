@@ -67,7 +67,7 @@
               <a-select-option :value="5">5 minutes</a-select-option>
               <a-select-option :value="10">10 minutes</a-select-option>
             </a-select>
-            <div class="field-help">Time duration before alert is triggered</div>
+            <div class="field-help">Time above threshold before alert is triggered</div>
           </a-form-item>
           
           
@@ -96,7 +96,6 @@
                       :max="100" 
                       style="width: 100%"
                     />
-                    <div class="field-help">Leave empty to use the same threshold as above</div>
                   </a-form-item>
                 </a-col>
                 
@@ -109,7 +108,6 @@
                       <a-select-option :value="5">5 minutes</a-select-option>
                       <a-select-option :value="10">10 minutes</a-select-option>
                     </a-select>
-                    <div class="field-help">Minimum duration before sending email</div>
                   </a-form-item>
                 </a-col>
               </a-row>
