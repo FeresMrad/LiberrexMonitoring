@@ -1,245 +1,286 @@
 <template>
-    <div>
-      <!-- Rule Form Modal -->
-      <a-modal
-        v-model:open="modalVisible"
-        :title="isEditing ? 'Edit Alert Rule' : 'Add Alert Rule'"
-        @ok="handleModalOk"
-        @cancel="handleModalCancel"
-        :confirmLoading="formLoading"
-        width="700px"
+  <div>
+    <!-- Rule Form Modal -->
+    <a-modal
+      v-model:open="modalVisible"
+      :title="isEditing ? 'Edit Alert Rule' : 'Add Alert Rule'"
+      @ok="handleModalOk"
+      @cancel="handleModalCancel"
+      :confirmLoading="formLoading"
+      width="700px"
+    >
+      <a-form
+        :model="ruleForm"
+        :rules="ruleFormRules"
+        layout="vertical"
+        ref="ruleFormRef"
       >
-        <a-form
-          :model="ruleForm"
-          :rules="ruleFormRules"
-          layout="vertical"
-          ref="ruleFormRef"
-        >
-          <a-form-item label="Rule Name" name="name">
-            <a-input v-model:value="ruleForm.name" placeholder="CPU High Usage Alert" />
-          </a-form-item>
+        <a-form-item label="Rule Name" name="name">
+          <a-input v-model:value="ruleForm.name" placeholder="CPU High Usage Alert" />
+        </a-form-item>
+        
+        <a-form-item label="Description" name="description">
+          <a-textarea v-model:value="ruleForm.description" placeholder="Alert when CPU usage is high" />
+        </a-form-item>
+        
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="Metric" name="metric_type">
+              <a-select v-model:value="ruleForm.metric_type">
+                <a-select-option value="cpu.percent">CPU Usage (%)</a-select-option>
+                <a-select-option value="memory.percent">Memory Usage (%)</a-select-option>
+                <a-select-option value="disk.percent">Disk Usage (%)</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="Comparison" name="comparison">
+              <a-select v-model:value="ruleForm.comparison">
+                <a-select-option value="above">Above</a-select-option>
+                <a-select-option value="below">Below</a-select-option>
+                <a-select-option value="equal">Equal to</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
           
-          <a-form-item label="Description" name="description">
-            <a-textarea v-model:value="ruleForm.description" placeholder="Alert when CPU usage is high" />
-          </a-form-item>
-          
-          <a-row :gutter="16">
-            <a-col :span="12">
-              <a-form-item label="Metric" name="metric_type">
-                <a-select v-model:value="ruleForm.metric_type">
-                  <a-select-option value="cpu.percent">CPU Usage (%)</a-select-option>
-                  <a-select-option value="memory.percent">Memory Usage (%)</a-select-option>
-                  <a-select-option value="disk.percent">Disk Usage (%)</a-select-option>
-                </a-select>
-              </a-form-item>
+          <a-col :span="12">
+            <a-form-item label="Threshold" name="threshold">
+              <a-input-number 
+                v-model:value="ruleForm.threshold" 
+                :min="0" 
+                :max="100" 
+                style="width: 100%"
+              />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        
+        <!-- Modified Duration field to allow direct input -->
+        <a-form-item label="Duration (minutes)" name="breach_duration">
+          <a-row :gutter="16" align="middle">
+            <a-col :span="16">
+              <a-input-number 
+                v-model:value="ruleForm.breach_duration" 
+                :min="0" 
+                style="width: 100%"
+                :precision="0"
+                placeholder="Enter minutes"
+              />
+            </a-col>
+            <a-col :span="8">
+              <a-button 
+                type="link" 
+                @click="() => ruleForm.breach_duration = 0"
+              >
+                Set Immediately
+              </a-button>
             </a-col>
           </a-row>
+          <div class="field-help">Time above threshold before alert is triggered (0 means immediately)</div>
+        </a-form-item>
+        
+        <a-divider>Notifications</a-divider>
+        
+        <a-form-item>
+          <div class="notification-options">
+            <a-form-item name="emailNotification" noStyle>
+              <a-checkbox v-model:checked="emailEnabled" @change="handleEmailEnabledChange">
+                Email Notifications
+              </a-checkbox>
+            </a-form-item>
+          </div>
           
+          <!-- Conditional email threshold fields -->
+          <div v-if="emailEnabled" class="threshold-options">
+            <a-row :gutter="16">
+              <a-col :span="12">
+                <a-form-item label="Email Threshold" name="email_threshold">
+                  <a-input-number 
+                    v-model:value="ruleForm.email_threshold" 
+                    :min="0" 
+                    :max="100" 
+                    style="width: 100%"
+                  />
+                </a-form-item>
+              </a-col>
+              
+              <a-col :span="12">
+                <!-- Modified Email Duration field -->
+                <a-form-item label="Email Duration (minutes)" name="email_duration">
+                  <a-row :gutter="8" align="middle">
+                    <a-col :span="16">
+                      <a-input-number 
+                        v-model:value="ruleForm.email_duration" 
+                        :min="0" 
+                        style="width: 100%"
+                        :precision="0"
+                        placeholder="Enter minutes"
+                      />
+                    </a-col>
+                    <a-col :span="8">
+                      <a-button 
+                        type="link" 
+                        size="small"
+                        @click="() => ruleForm.email_duration = 0"
+                      >
+                        Immediately
+                      </a-button>
+                    </a-col>
+                  </a-row>
+                </a-form-item>
+              </a-col>
+            </a-row>
+          </div>
+        </a-form-item>
+        
+        <div class="notification-options">
+          <a-form-item name="smsNotification" noStyle style="margin-left: 16px;">
+            <a-checkbox 
+              v-model:checked="smsEnabled" 
+              @change="handleSmsChange"
+            >
+              SMS Notifications
+            </a-checkbox>
+          </a-form-item>
+        </div>
+        
+        <!-- Conditional SMS threshold fields -->
+        <div v-if="smsEnabled" class="threshold-options">
           <a-row :gutter="16">
             <a-col :span="12">
-              <a-form-item label="Comparison" name="comparison">
-                <a-select v-model:value="ruleForm.comparison">
-                  <a-select-option value="above">Above</a-select-option>
-                  <a-select-option value="below">Below</a-select-option>
-                  <a-select-option value="equal">Equal to</a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
-            
-            <a-col :span="12">
-              <a-form-item label="Threshold" name="threshold">
+              <a-form-item label="SMS Threshold" name="sms_threshold">
                 <a-input-number 
-                  v-model:value="ruleForm.threshold" 
+                  v-model:value="ruleForm.sms_threshold" 
                   :min="0" 
                   :max="100" 
                   style="width: 100%"
                 />
               </a-form-item>
             </a-col>
-          </a-row>
-          
-          <a-form-item label="Duration" name="breach_duration">
-            <a-select v-model:value="ruleForm.breach_duration">
-              <a-select-option :value="0">Immediately</a-select-option>
-              <a-select-option :value="1">1 minute</a-select-option>
-              <a-select-option :value="2">2 minutes</a-select-option>
-              <a-select-option :value="5">5 minutes</a-select-option>
-              <a-select-option :value="10">10 minutes</a-select-option>
-            </a-select>
-            <div class="field-help">Time above threshold before alert is triggered</div>
-          </a-form-item>
-          
-          
-          
-          <a-divider>Notifications</a-divider>
-          
-          <a-form-item>
-            <div class="notification-options">
-              <a-form-item name="emailNotification" noStyle>
-                <a-checkbox v-model:checked="emailEnabled" @change="handleEmailEnabledChange">
-                  Email Notifications
-                </a-checkbox>
-              </a-form-item>
-              
-              
-            </div>
             
-            <!-- Conditional email threshold fields -->
-            <div v-if="emailEnabled" class="threshold-options">
-              <a-row :gutter="16">
-                <a-col :span="12">
-                  <a-form-item label="Email Threshold" name="email_threshold">
+            <a-col :span="12">
+              <!-- Modified SMS Duration field -->
+              <a-form-item label="SMS Duration (minutes)" name="sms_duration">
+                <a-row :gutter="8" align="middle">
+                  <a-col :span="16">
                     <a-input-number 
-                      v-model:value="ruleForm.email_threshold" 
+                      v-model:value="ruleForm.sms_duration" 
                       :min="0" 
-                      :max="100" 
                       style="width: 100%"
+                      :precision="0"
+                      placeholder="Enter minutes"
                     />
-                  </a-form-item>
-                </a-col>
-                
-                <a-col :span="12">
-                  <a-form-item label="Email Duration" name="email_duration">
-                    <a-select v-model:value="ruleForm.email_duration">
-                      <a-select-option :value="0">Immediately</a-select-option>
-                      <a-select-option :value="1">1 minute</a-select-option>
-                      <a-select-option :value="2">2 minutes</a-select-option>
-                      <a-select-option :value="5">5 minutes</a-select-option>
-                      <a-select-option :value="10">10 minutes</a-select-option>
-                    </a-select>
-                  </a-form-item>
-                </a-col>
-              </a-row>
-            </div>
-          </a-form-item>
-          <div class="notification-options">
-              <a-form-item name="smsNotification" noStyle style="margin-left: 16px;">
-                <a-checkbox 
-                  v-model:checked="smsEnabled" 
-                  @change="handleSmsChange"
-                >
-                  SMS Notifications
-                </a-checkbox>
+                  </a-col>
+                  <a-col :span="8">
+                    <a-button 
+                      type="link" 
+                      size="small"
+                      @click="() => ruleForm.sms_duration = 0"
+                    >
+                      Immediately
+                    </a-button>
+                  </a-col>
+                </a-row>
               </a-form-item>
-            </div>
-                    <!-- Conditional SMS threshold fields -->
-            <div v-if="smsEnabled" class="threshold-options">
-            <a-row :gutter="16">
-                <a-col :span="12">
-                <a-form-item label="SMS Threshold" name="sms_threshold">
-                    <a-input-number 
-                    v-model:value="ruleForm.sms_threshold" 
-                    :min="0" 
-                    :max="100" 
-                    style="width: 100%"
-                    />
-                </a-form-item>
-                </a-col>
-                
-                <a-col :span="12">
-                <a-form-item label="SMS Duration" name="sms_duration">
-                    <a-select v-model:value="ruleForm.sms_duration">
-                    <a-select-option :value="0">Immediately</a-select-option>
-                    <a-select-option :value="1">1 minute</a-select-option>
-                    <a-select-option :value="2">2 minutes</a-select-option>
-                    <a-select-option :value="5">5 minutes</a-select-option>
-                    <a-select-option :value="10">10 minutes</a-select-option>
-                    </a-select>
-                </a-form-item>
-                </a-col>
-            </a-row>
-            </div>
-          <a-divider>Target Hosts</a-divider>
-          
-          <a-form-item name="target_selection">
-            <a-radio-group v-model:value="targetSelection" @change="handleTargetChange">
-              <a-radio value="all">All Hosts</a-radio>
-              <a-radio value="specific">Specific Hosts</a-radio>
-            </a-radio-group>
-          </a-form-item>
-          
-          <a-form-item v-if="targetSelection === 'specific'" label="Select Hosts" name="selected_hosts">
-            <a-select 
-              v-model:value="selectedHosts" 
-              mode="multiple" 
-              placeholder="Select hosts"
-              style="width: 100%"
-              :loading="hostsLoading"
-            >
-              <a-select-option v-for="host in availableHosts" :key="host.id" :value="host.id">
-                {{ host.displayName }}
-              </a-select-option>
-            </a-select>
-          </a-form-item>
-        </a-form>
-      </a-modal>
-    </div>
-  </template>
-  
-  <script setup>
-  import { ref, watch, computed, defineProps, defineEmits, defineExpose } from 'vue';
-  import { message } from 'ant-design-vue';
-  import api from '@/services/api';
-  
-  // Define props
-  const props = defineProps({
-    // Optional initial rule for editing
-    rule: {
-      type: Object,
-      default: null
-    }
-  });
-  
-  // Define emits
-  const emit = defineEmits([
-    'saved', // When a rule is saved (created or updated)
-    'cancel' // When the modal is canceled
-  ]);
-  
-  // Reactive state
-  const modalVisible = ref(false);
-  const formLoading = ref(false);
-  const isEditing = ref(false);
-  const ruleFormRef = ref(null);
-  const currentRuleId = ref(null);
-  
-  // Form state
-  const ruleForm = ref({
-    name: '',
-    description: '',
-    metric_type: 'cpu.percent',
-    comparison: 'above',
-    threshold: 80,
-    breach_duration: 0, // Default to immediate
-    email_threshold: null, // New field for email threshold
-    email_duration: 0,     // New field for email duration
-    sms_threshold: null,   // Add SMS threshold
-    sms_duration: 0        // Add SMS duration
-  });
-  
-  // Notification state
-  const emailEnabled = ref(false);
-  const smsEnabled = ref(false);
-  
-  // Hosts data for specific targeting
-  const availableHosts = ref([]);
-  const hostsLoading = ref(false);
-  const selectedHosts = ref([]);
-  const targetSelection = ref('all');
-  
-  // Computed property for converting between duration and breach count
-  const breachCountFromDuration = computed(() => {
-    return Math.ceil(ruleForm.value.breach_duration * 2); // 1 minute = 2 entries (30 seconds each)
-  });
-  
-  // Computed property for converting between email duration and breach count
-  const emailBreachCountFromDuration = computed(() => {
-    return Math.ceil(ruleForm.value.email_duration * 2); // 1 minute = 2 entries (30 seconds each)
-  });
+            </a-col>
+          </a-row>
+        </div>
+        
+        <a-divider>Target Hosts</a-divider>
+        
+        <a-form-item name="target_selection">
+          <a-radio-group v-model:value="targetSelection" @change="handleTargetChange">
+            <a-radio value="all">All Hosts</a-radio>
+            <a-radio value="specific">Specific Hosts</a-radio>
+          </a-radio-group>
+        </a-form-item>
+        
+        <a-form-item v-if="targetSelection === 'specific'" label="Select Hosts" name="selected_hosts">
+          <a-select 
+            v-model:value="selectedHosts" 
+            mode="multiple" 
+            placeholder="Select hosts"
+            style="width: 100%"
+            :loading="hostsLoading"
+          >
+            <a-select-option v-for="host in availableHosts" :key="host.id" :value="host.id">
+              {{ host.displayName }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+      </a-form>
+    </a-modal>
+  </div>
+</template>
 
-  // Add SMS breach count computation
+<script setup>
+import { ref, watch, computed, defineProps, defineEmits, defineExpose } from 'vue';
+import { message } from 'ant-design-vue';
+import api from '@/services/api';
+
+// Define props
+const props = defineProps({
+  // Optional initial rule for editing
+  rule: {
+    type: Object,
+    default: null
+  }
+});
+
+// Define emits
+const emit = defineEmits([
+  'saved', // When a rule is saved (created or updated)
+  'cancel' // When the modal is canceled
+]);
+
+// Reactive state
+const modalVisible = ref(false);
+const formLoading = ref(false);
+const isEditing = ref(false);
+const ruleFormRef = ref(null);
+const currentRuleId = ref(null);
+
+// Form state
+const ruleForm = ref({
+  name: '',
+  description: '',
+  metric_type: 'cpu.percent',
+  comparison: 'above',
+  threshold: 80,
+  breach_duration: 0, // Default to immediate
+  email_threshold: null, // New field for email threshold
+  email_duration: 0,     // New field for email duration
+  sms_threshold: null,   // Add SMS threshold
+  sms_duration: 0        // Add SMS duration
+});
+
+// Notification state
+const emailEnabled = ref(false);
+const smsEnabled = ref(false);
+
+// Hosts data for specific targeting
+const availableHosts = ref([]);
+const hostsLoading = ref(false);
+const selectedHosts = ref([]);
+const targetSelection = ref('all');
+
+// Computed property for converting between duration and breach count
+// Using the formula: value = typed_value + 1 (typed_value=0 means immediately)
+const breachCountFromDuration = computed(() => {
+  return ruleForm.value.breach_duration + 1;
+});
+
+// Computed property for converting between email duration and breach count
+const emailBreachCountFromDuration = computed(() => {
+  return ruleForm.value.email_duration + 1;
+});
+
+// Add SMS breach count computation
 const smsBreachCountFromDuration = computed(() => {
-  return Math.ceil(ruleForm.value.sms_duration * 2); // 1 minute = 2 entries (30 seconds each)
+  return ruleForm.value.sms_duration + 1;
 });
 
 // Handle SMS enabled state change
@@ -251,39 +292,32 @@ const handleSmsChange = (checked) => {
     }
   }
 };
-  
-  // Form validation rules
-  const ruleFormRules = {
-    name: [{ required: true, message: 'Please input rule name', trigger: 'blur' }],
-    metric_type: [{ required: true, message: 'Please select a metric', trigger: 'change' }],
-    comparison: [{ required: true, message: 'Please select a comparison', trigger: 'change' }],
-    threshold: [{ required: true, message: 'Please input a threshold', trigger: 'change' }]
-  };
-  
-  // Watch for changes in the rule prop
-  watch(() => props.rule, (newRule) => {
-    if (newRule) {
-      setRuleForEditing(newRule);
+
+// Form validation rules
+const ruleFormRules = {
+  name: [{ required: true, message: 'Please input rule name', trigger: 'blur' }],
+  metric_type: [{ required: true, message: 'Please select a metric', trigger: 'change' }],
+  comparison: [{ required: true, message: 'Please select a comparison', trigger: 'change' }],
+  threshold: [{ required: true, message: 'Please input a threshold', trigger: 'change' }]
+};
+
+// Watch for changes in the rule prop
+watch(() => props.rule, (newRule) => {
+  if (newRule) {
+    setRuleForEditing(newRule);
+  }
+});
+
+// Handle email enabled state change
+const handleEmailEnabledChange = (checked) => {
+  if (checked) {
+    // Set default email threshold = main threshold if not already set
+    if (ruleForm.value.email_threshold === null) {
+      ruleForm.value.email_threshold = ruleForm.value.threshold;
     }
-  });
-  
-  // Handle email enabled state change
-  const handleEmailEnabledChange = (checked) => {
-    if (checked) {
-      // Set default email threshold = main threshold if not already set
-      if (ruleForm.value.email_threshold === null) {
-        ruleForm.value.email_threshold = ruleForm.value.threshold;
-      }
-    }
-  };
-  
-  // Ensure SMS is only enabled if email is enabled
-//   const handleSmsChange = (checked) => {
-//     if (checked && !emailEnabled.value) {
-//       emailEnabled.value = true;
-//     }
-//   };
-  
+  }
+};
+
 // Set rule data for editing
 const setRuleForEditing = (rule) => {
   if (!rule) return;
@@ -292,13 +326,14 @@ const setRuleForEditing = (rule) => {
   currentRuleId.value = rule.id;
   
   // Calculate breach duration from breach_count (min_breach_count)
-  const breachDuration = rule.breach_count ? rule.breach_count / 2 : 0;
+  // Using the inverse of our formula: typed_value = value - 1
+  const breachDuration = rule.breach_count ? rule.breach_count - 1 : 0;
   
   // Calculate email breach duration from email_breach_count
-  const emailDuration = rule.email_breach_count ? rule.email_breach_count / 2 : 0;
+  const emailDuration = rule.email_breach_count ? rule.email_breach_count - 1 : 0;
   
   // Calculate SMS breach duration from sms_breach_count
-  const smsDuration = rule.sms_breach_count ? rule.sms_breach_count / 2 : 0;
+  const smsDuration = rule.sms_breach_count ? rule.sms_breach_count - 1 : 0;
   
   // Update form with rule data
   ruleForm.value = {
@@ -338,64 +373,64 @@ const setRuleForEditing = (rule) => {
   
   isEditing.value = true;
 };
+
+// Handle target selection change
+const handleTargetChange = (e) => {
+  const value = e.target.value;
+  targetSelection.value = value;
   
-  // Handle target selection change
-  const handleTargetChange = (e) => {
-    const value = e.target.value;
-    targetSelection.value = value;
-    
-    if (value === 'specific' && availableHosts.value.length === 0) {
-      fetchAvailableHosts();
-    }
+  if (value === 'specific' && availableHosts.value.length === 0) {
+    fetchAvailableHosts();
+  }
+};
+
+// Check if targets include wildcard (all hosts)
+const hasWildcardTarget = (targets) => {
+  return targets && targets.some(target => target.target_type === 'all' || target.target_id === '*');
+};
+
+// Reset form to default values
+const resetForm = () => {
+  ruleForm.value = {
+    name: '',
+    description: '',
+    metric_type: 'cpu.percent',
+    comparison: 'above',
+    threshold: 80,
+    breach_duration: 0,
+    email_threshold: null,
+    email_duration: 0,
+    sms_threshold: null,
+    sms_duration: 0
   };
+  targetSelection.value = 'all';
+  selectedHosts.value = [];
+  currentRuleId.value = null;
+  isEditing.value = false;
+  emailEnabled.value = false;
+  smsEnabled.value = false;
+};
+
+// Fetch available hosts for targeting
+const fetchAvailableHosts = async () => {
+  if (availableHosts.value.length > 0) return; // Already fetched
   
-  // Check if targets include wildcard (all hosts)
-  const hasWildcardTarget = (targets) => {
-    return targets && targets.some(target => target.target_type === 'all' || target.target_id === '*');
-  };
+  hostsLoading.value = true;
   
-  // Reset form to default values
-  const resetForm = () => {
-    ruleForm.value = {
-      name: '',
-      description: '',
-      metric_type: 'cpu.percent',
-      comparison: 'above',
-      threshold: 80,
-      breach_duration: 0,
-      email_threshold: null,
-      email_duration: 0,
-      sms_threshold: null,
-      sms_duration: 0
-    };
-    targetSelection.value = 'all';
-    selectedHosts.value = [];
-    currentRuleId.value = null;
-    isEditing.value = false;
-    emailEnabled.value = false;
-    smsEnabled.value = false;
-  };
-  
-  // Fetch available hosts for targeting
-  const fetchAvailableHosts = async () => {
-    if (availableHosts.value.length > 0) return; // Already fetched
-    
-    hostsLoading.value = true;
-    
-    try {
-      const response = await api.getHosts();
-      availableHosts.value = response.data.map(host => ({
-        id: host.name,
-        displayName: host.customName || host.name
-      }));
-    } catch (error) {
-      console.error('Error fetching hosts:', error);
-      message.error('Failed to load hosts');
-    } finally {
-      hostsLoading.value = false;
-    }
-  };
-  
+  try {
+    const response = await api.getHosts();
+    availableHosts.value = response.data.map(host => ({
+      id: host.name,
+      displayName: host.customName || host.name
+    }));
+  } catch (error) {
+    console.error('Error fetching hosts:', error);
+    message.error('Failed to load hosts');
+  } finally {
+    hostsLoading.value = false;
+  }
+};
+
 // Handle form submission
 const handleModalOk = async () => {
   try {
@@ -468,53 +503,53 @@ const handleModalOk = async () => {
     formLoading.value = false;
   }
 };
-  
-  // Handle modal cancel
-  const handleModalCancel = () => {
-    modalVisible.value = false;
-    resetForm();
-    emit('cancel');
-  };
-  
-  // Method to open the modal (for new rule)
-  const showModal = () => {
-    resetForm();
+
+// Handle modal cancel
+const handleModalCancel = () => {
+  modalVisible.value = false;
+  resetForm();
+  emit('cancel');
+};
+
+// Method to open the modal (for new rule)
+const showModal = () => {
+  resetForm();
+  modalVisible.value = true;
+};
+
+// Method to open the modal for editing a specific rule
+const showModalForEdit = (rule) => {
+  if (rule) {
+    setRuleForEditing(rule);
     modalVisible.value = true;
-  };
-  
-  // Method to open the modal for editing a specific rule
-  const showModalForEdit = (rule) => {
-    if (rule) {
-      setRuleForEditing(rule);
-      modalVisible.value = true;
-    }
-  };
-  
-  // Expose methods to parent component
-  defineExpose({
-    showModal,
-    showModalForEdit
-  });
-  </script>
-  
-  <style scoped>
-  .notification-options {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
   }
-  
-  .threshold-options  {
-    margin-top: 10px;
-    padding: 10px;
-    border-left: 2px solid #1890ff;
-    background-color: #f0f8ff;
-    border-radius: 4px;
-  }
-  
-  .field-help {
-    font-size: 12px;
-    color: #888;
-    margin-top: 4px;
-  }
-  </style>
+};
+
+// Expose methods to parent component
+defineExpose({
+  showModal,
+  showModalForEdit
+});
+</script>
+
+<style scoped>
+.notification-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.threshold-options {
+  margin-top: 10px;
+  padding: 10px;
+  border-left: 2px solid #1890ff;
+  background-color: #f0f8ff;
+  border-radius: 4px;
+}
+
+.field-help {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+</style>
