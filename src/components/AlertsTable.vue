@@ -11,7 +11,6 @@
       
       <!-- Host filter - only show if there are alerts from multiple hosts -->
       <a-select
-        v-if="uniqueHosts.length > 1"
         v-model:value="hostFilter"
         style="width: 200px; margin-left: 16px;"
         placeholder="All Hosts"
