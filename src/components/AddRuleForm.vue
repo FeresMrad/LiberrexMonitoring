@@ -327,13 +327,13 @@ const setRuleForEditing = (rule) => {
   
   // Calculate breach duration from breach_count (min_breach_count)
   // Using the inverse of our formula: typed_value = value - 1
-  const breachDuration = (rule.breach_count - 1)/2;
+  const breachDuration = rule.breach_count ? (rule.breach_count - 1)/2: 0;
   
   // Calculate email breach duration from email_breach_count
-  const emailDuration = (rule.email_breach_count - 1)/2;
+  const emailDuration = rule.breach_count ? (rule.email_breach_count - 1)/2: 0;
   
   // Calculate SMS breach duration from sms_breach_count
-  const smsDuration = (rule.sms_breach_count - 1)/2;
+  const smsDuration = rule.breach_count ? (rule.sms_breach_count - 1)/2 : 0;
   
   // Update form with rule data
   ruleForm.value = {
@@ -436,6 +436,17 @@ const handleModalOk = async () => {
   try {
     // Validate form
     await ruleFormRef.value.validate();
+    if (emailEnabled.value && (ruleForm.value.email_duration < 0 || ruleForm.value.email_duration === undefined)) {
+      message.error('Email duration must be a positive number (0 or greater)');
+      formLoading.value = false;
+      return;
+    }
+
+    if (smsEnabled.value && (ruleForm.value.sms_duration < 0 || ruleForm.value.sms_duration === undefined)) {
+      message.error('SMS duration must be a positive number (0 or greater)');
+      formLoading.value = false;
+      return;
+    }
     
     formLoading.value = true;
     
