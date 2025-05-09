@@ -116,7 +116,6 @@
               <a-form-item name="smsNotification" noStyle style="margin-left: 16px;">
                 <a-checkbox 
                   v-model:checked="smsEnabled" 
-                  :disabled="!emailEnabled"
                   @change="handleSmsChange"
                 >
                   SMS Notifications
@@ -285,60 +284,60 @@ const handleSmsChange = (checked) => {
 //     }
 //   };
   
-  // Set rule data for editing
-  const setRuleForEditing = (rule) => {
-    if (!rule) return;
-    
-    // Store the rule ID
-    currentRuleId.value = rule.id;
-    
-    // Calculate breach duration from duration_minutes (min_breach_count)
-    const breachDuration = rule.duration_minutes ? rule.duration_minutes / 2 : 0;
-    
-    // Calculate email breach duration from email_duration_minutes
-    const emailDuration = rule.email_duration_minutes ? rule.email_duration_minutes / 2 : 0;
-
-    // Calculate SMS breach duration from sms_duration_minutes
-    const smsDuration = rule.sms_duration_minutes ? rule.sms_duration_minutes / 2 : 0;
-    
-    // Update form with rule data
-    ruleForm.value = {
-      name: rule.name,
-      description: rule.description || '',
-      metric_type: rule.metric_type,
-      comparison: rule.comparison,
-      threshold: rule.threshold,
-      breach_duration: breachDuration,
-      email_threshold: rule.email_threshold || null,
-      email_duration: emailDuration,
-      sms_threshold: rule.sms_threshold || null,
-      sms_duration: smsDuration
-    };
-    
-    // Set notification options based on existing settings & severity
-    emailEnabled.value = rule.notifications?.email_enabled || rule.severity === 'warning' || rule.severity === 'critical';
-    smsEnabled.value = rule.notifications?.sms_enabled || rule.severity === 'critical';
-    
-    // Determine target selection mode
-    if (hasWildcardTarget(rule.targets)) {
-      targetSelection.value = 'all';
-      selectedHosts.value = [];
-    } else {
-      targetSelection.value = 'specific';
-      
-      // Set selected hosts
-      selectedHosts.value = rule.targets
-        .filter(target => target.target_type === 'host')
-        .map(target => target.target_id);
-      
-      // Make sure we have hosts loaded
-      if (availableHosts.value.length === 0) {
-        fetchAvailableHosts();
-      }
-    }
-    
-    isEditing.value = true;
+// Set rule data for editing
+const setRuleForEditing = (rule) => {
+  if (!rule) return;
+  
+  // Store the rule ID
+  currentRuleId.value = rule.id;
+  
+  // Calculate breach duration from duration_minutes (min_breach_count)
+  const breachDuration = rule.duration_minutes ? rule.duration_minutes / 2 : 0;
+  
+  // Calculate email breach duration from email_duration_minutes
+  const emailDuration = rule.email_duration_minutes ? rule.email_duration_minutes / 2 : 0;
+  
+  // Calculate SMS breach duration from sms_duration_minutes
+  const smsDuration = rule.sms_duration_minutes ? rule.sms_duration_minutes / 2 : 0;
+  
+  // Update form with rule data
+  ruleForm.value = {
+    name: rule.name,
+    description: rule.description || '',
+    metric_type: rule.metric_type,
+    comparison: rule.comparison,
+    threshold: rule.threshold,
+    breach_duration: breachDuration,
+    email_threshold: rule.email_threshold || null,
+    email_duration: emailDuration,
+    sms_threshold: rule.sms_threshold || null,
+    sms_duration: smsDuration
   };
+  
+  // Set notification options based on existing settings - independent of each other
+  emailEnabled.value = rule.notifications?.email_enabled || false;
+  smsEnabled.value = rule.notifications?.sms_enabled || false;
+  
+  // Determine target selection mode
+  if (hasWildcardTarget(rule.targets)) {
+    targetSelection.value = 'all';
+    selectedHosts.value = [];
+  } else {
+    targetSelection.value = 'specific';
+    
+    // Set selected hosts
+    selectedHosts.value = rule.targets
+      .filter(target => target.target_type === 'host')
+      .map(target => target.target_id);
+    
+    // Make sure we have hosts loaded
+    if (availableHosts.value.length === 0) {
+      fetchAvailableHosts();
+    }
+  }
+  
+  isEditing.value = true;
+};
   
   // Handle target selection change
   const handleTargetChange = (e) => {
@@ -397,78 +396,78 @@ const handleSmsChange = (checked) => {
     }
   };
   
-  // Handle form submission
-  const handleModalOk = async () => {
-    try {
-      // Validate form
-      await ruleFormRef.value.validate();
+// Handle form submission
+const handleModalOk = async () => {
+  try {
+    // Validate form
+    await ruleFormRef.value.validate();
+    
+    formLoading.value = true;
+    
+    // Prepare targets based on selection
+    let targets = [];
+    if (targetSelection.value === 'all') {
+      targets = [{ type: 'all', id: '*' }];
+    } else {
+      targets = selectedHosts.value.map(hostId => ({ type: 'host', id: hostId }));
+    }
+    
+    // Create data object with breach count from duration
+    const ruleData = {
+      name: ruleForm.value.name,
+      description: ruleForm.value.description,
+      metric_type: ruleForm.value.metric_type,
+      comparison: ruleForm.value.comparison,
+      threshold: ruleForm.value.threshold,
+      targets: targets,
+      min_breach_count: breachCountFromDuration.value,
       
-      formLoading.value = true;
+      // Add email threshold and duration if email is enabled
+      ...(emailEnabled.value && {
+        email_threshold: ruleForm.value.email_threshold,
+        email_duration_minutes: emailBreachCountFromDuration.value
+      }),
       
-      // Prepare targets based on selection
-      let targets = [];
-      if (targetSelection.value === 'all') {
-        targets = [{ type: 'all', id: '*' }];
-      } else {
-        targets = selectedHosts.value.map(hostId => ({ type: 'host', id: hostId }));
-      }
-      
-      // Create data object with breach count from duration
-      const ruleData = {
-        name: ruleForm.value.name,
-        description: ruleForm.value.description,
-        metric_type: ruleForm.value.metric_type,
-        comparison: ruleForm.value.comparison,
-        threshold: ruleForm.value.threshold,
-        targets: targets,
-        min_breach_count: breachCountFromDuration.value,
-        
-        // Add new email threshold and duration if email is enabled
-        ...(emailEnabled.value && {
-          email_threshold: ruleForm.value.email_threshold,
-          email_duration_minutes: emailBreachCountFromDuration.value
-        }),
-
-        // Add SMS threshold and duration if SMS is enabled
-        ...(smsEnabled.value && {
+      // Add SMS threshold and duration if SMS is enabled
+      ...(smsEnabled.value && {
         sms_threshold: ruleForm.value.sms_threshold,
         sms_duration_minutes: smsBreachCountFromDuration.value
-        }),
-        
-        // Add notification settings to determine severity
-        notifications: {
-          email_enabled: emailEnabled.value,
-          sms_enabled: smsEnabled.value,
-          email_recipients: '',
-          sms_recipients: ''
-        }
-      };
+      }),
       
-      let result;
-      
-      if (isEditing.value && currentRuleId.value) {
-        // Update existing rule
-        result = await api.updateAlertRule(currentRuleId.value, ruleData);
-        message.success('Alert rule updated successfully');
-      } else {
-        // Create new rule
-        result = await api.createAlertRule(ruleData);
-        message.success('Alert rule created successfully');
+      // Add notification settings - now independent of each other
+      notifications: {
+        email_enabled: emailEnabled.value,
+        sms_enabled: smsEnabled.value,
+        email_recipients: '',
+        sms_recipients: ''
       }
-      
-      // Emit saved event
-      emit('saved', result);
-      
-      // Close modal and reset form
-      modalVisible.value = false;
-      resetForm();
-    } catch (error) {
-      console.error('Error saving alert rule:', error);
-      message.error(error.response?.data?.error || 'Failed to save alert rule');
-    } finally {
-      formLoading.value = false;
+    };
+    
+    let result;
+    
+    if (isEditing.value && currentRuleId.value) {
+      // Update existing rule
+      result = await api.updateAlertRule(currentRuleId.value, ruleData);
+      message.success('Alert rule updated successfully');
+    } else {
+      // Create new rule
+      result = await api.createAlertRule(ruleData);
+      message.success('Alert rule created successfully');
     }
-  };
+    
+    // Emit saved event
+    emit('saved', result);
+    
+    // Close modal and reset form
+    modalVisible.value = false;
+    resetForm();
+  } catch (error) {
+    console.error('Error saving alert rule:', error);
+    message.error(error.response?.data?.error || 'Failed to save alert rule');
+  } finally {
+    formLoading.value = false;
+  }
+};
   
   // Handle modal cancel
   const handleModalCancel = () => {
