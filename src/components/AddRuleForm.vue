@@ -270,17 +270,17 @@ const targetSelection = ref('all');
 // Computed property for converting between duration and breach count
 // Using the formula: value = typed_value + 1 (typed_value=0 means immediately)
 const breachCountFromDuration = computed(() => {
-  return ruleForm.value.breach_duration + 1;
+  return (ruleForm.value.breach_duration)*2 + 1;
 });
 
 // Computed property for converting between email duration and breach count
 const emailBreachCountFromDuration = computed(() => {
-  return ruleForm.value.email_duration + 1;
+  return (ruleForm.value.email_duration)*2 + 1;
 });
 
 // Add SMS breach count computation
 const smsBreachCountFromDuration = computed(() => {
-  return ruleForm.value.sms_duration + 1;
+  return (ruleForm.value.sms_duration)*2 + 1;
 });
 
 // Handle SMS enabled state change
@@ -327,13 +327,13 @@ const setRuleForEditing = (rule) => {
   
   // Calculate breach duration from breach_count (min_breach_count)
   // Using the inverse of our formula: typed_value = value - 1
-  const breachDuration = rule.breach_count ? rule.breach_count - 1 : 0;
+  const breachDuration = (rule.breach_count - 1)/2;
   
   // Calculate email breach duration from email_breach_count
-  const emailDuration = rule.email_breach_count ? rule.email_breach_count - 1 : 0;
+  const emailDuration = (rule.email_breach_count - 1)/2;
   
   // Calculate SMS breach duration from sms_breach_count
-  const smsDuration = rule.sms_breach_count ? rule.sms_breach_count - 1 : 0;
+  const smsDuration = (rule.sms_breach_count - 1)/2;
   
   // Update form with rule data
   ruleForm.value = {
