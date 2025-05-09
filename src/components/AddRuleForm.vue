@@ -291,14 +291,14 @@ const setRuleForEditing = (rule) => {
   // Store the rule ID
   currentRuleId.value = rule.id;
   
-  // Calculate breach duration from duration_minutes (min_breach_count)
-  const breachDuration = rule.duration_minutes ? rule.duration_minutes / 2 : 0;
+  // Calculate breach duration from breach_count (min_breach_count)
+  const breachDuration = rule.breach_count ? rule.breach_count / 2 : 0;
   
-  // Calculate email breach duration from email_duration_minutes
-  const emailDuration = rule.email_duration_minutes ? rule.email_duration_minutes / 2 : 0;
+  // Calculate email breach duration from email_breach_count
+  const emailDuration = rule.email_breach_count ? rule.email_breach_count / 2 : 0;
   
-  // Calculate SMS breach duration from sms_duration_minutes
-  const smsDuration = rule.sms_duration_minutes ? rule.sms_duration_minutes / 2 : 0;
+  // Calculate SMS breach duration from sms_breach_count
+  const smsDuration = rule.sms_breach_count ? rule.sms_breach_count / 2 : 0;
   
   // Update form with rule data
   ruleForm.value = {
@@ -425,13 +425,13 @@ const handleModalOk = async () => {
       // Add email threshold and duration if email is enabled
       ...(emailEnabled.value && {
         email_threshold: ruleForm.value.email_threshold,
-        email_duration_minutes: emailBreachCountFromDuration.value
+        email_breach_count: emailBreachCountFromDuration.value
       }),
       
       // Add SMS threshold and duration if SMS is enabled
       ...(smsEnabled.value && {
         sms_threshold: ruleForm.value.sms_threshold,
-        sms_duration_minutes: smsBreachCountFromDuration.value
+        sms_breach_count: smsBreachCountFromDuration.value
       }),
       
       // Add notification settings - now independent of each other
