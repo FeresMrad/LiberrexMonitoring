@@ -42,11 +42,10 @@
                     @click="viewNotification(notification)"
                   >
                     <div class="notification-item">
-                      <div class="notification-severity" :class="notification.severity">
-                        <!-- Show different icons based on severity -->
-                        <warning-outlined v-if="notification.severity === 'critical'" />
-                        <exclamation-outlined v-else-if="notification.severity === 'warning'" />
-                        <info-circle-outlined v-else />
+                      <div class="notification-severity" :class="notification.status === 'triggered' ? 'active' : 'resolved'">
+                        <!-- Show different icons based on status instead of severity -->
+                        <warning-outlined v-if="notification.status === 'triggered'" />
+                        <check-circle-outlined v-else />
                       </div>
                       <div class="notification-content">
                         <div class="notification-title">
@@ -79,8 +78,7 @@
     BellOutlined, 
     InboxOutlined, 
     WarningOutlined,
-    ExclamationOutlined,
-    InfoCircleOutlined,
+    CheckCircleOutlined
   } from '@ant-design/icons-vue';
   import websocket from '@/services/websocket';
   import authService from '@/services/auth';
@@ -264,7 +262,6 @@ const generateNotificationMessage = (notification) => {
     id: data.id,
     title: data.rule_name,
     message: data.message, // Keep for fallback
-    severity: data.severity || 'info',
     host: data.host,
     time: data.triggered_at,
     read: false,
@@ -355,16 +352,12 @@ const generateNotificationMessage = (notification) => {
     padding-top: 2px;
   }
   
-  .notification-severity.info {
-    color: #1890ff;
+  .notification-severity.active {
+  color: #f5222d;
   }
-  
-  .notification-severity.warning {
-    color: #faad14;
-  }
-  
-  .notification-severity.critical {
-    color: #f5222d;
+
+.notification-severity.resolved {
+  color: #52c41a;
   }
   
   .notification-content {
