@@ -46,10 +46,10 @@
           <!-- Left side: 2x2 grid -->
           <div class="left-grid">
             <div class="chart-box">
-              <AcceptedSshDoughnut :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
+              <SshDoughnutChart :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" connectionType="accepted" />
             </div>
             <div class="chart-box">
-              <FailedSshDoughnut :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
+              <SshDoughnutChart :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" connectionType="failed" />
             </div>
             <div class ="chart-box">
               <ActiveSshSessions :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
@@ -77,12 +77,11 @@ import HiHello from "@/components/HiHello.vue"
 import SshTable from '@/components/SshTable.vue'
 import FailedSsh from '@/components/FailedSsh.vue'
 import UniqueFailedSsh from '@/components/UniqueFailedSsh.vue'
-import FailedSshDoughnut from '@/components/FailedSshDoughnut.vue'
-import AcceptedSshDoughnut from '@/components/AcceptedSshDoughnut.vue'
 import FailedSshIpTable from '@/components/FailedSshIpTable.vue'
 import ActiveSshSessions from '@/components/ActiveSshSessions.vue'
 import ActiveSshCount from '@/components/ActiveSshCount.vue'
 import api from '@/services/api'
+import SshDoughnutChart from '@/components/SshDoughnutChart.vue'
 
 // Define the host for usage within the component
 const route = useRoute()
