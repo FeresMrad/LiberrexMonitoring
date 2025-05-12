@@ -9,7 +9,6 @@
         <a-radio-button value="resolved">Resolved</a-radio-button>
       </a-radio-group>
       
-      <!-- Host filter - only show if there are alerts from multiple hosts -->
       <a-select
         v-model:value="hostFilter"
         style="width: 200px; margin-left: 16px;"

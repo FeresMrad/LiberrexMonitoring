@@ -18,13 +18,13 @@
         <!-- Chart grid (other dashboard components) -->
         <div class="chart-grid">
           <div class="chart-item">
-            <CpuPerChart :host="host" />
+            <ResourceUsageChart :host="host" resourceType="cpu" />
           </div>
           <div class="chart-item">
-            <MemPerChart :host="host" />
+            <ResourceUsageChart :host="host" resourceType="memory" />
           </div>
           <div class="chart-item"> 
-            <DiskPerChart :host="host" />
+            <ResourceUsageChart :host="host" resourceType="disk" />
           </div>
           <div class="chart-item">
             <NetworkioChart :host="host" />
@@ -51,15 +51,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import HiHello from "@/components/HiHello.vue"
 import UptimeInfo from "@/components/UptimeInfo.vue"
-import CpuPerChart from "@/components/CpuPerChart.vue"
-import MemPerChart from "@/components/MemPerChart.vue"
 import NetworkioChart from "@/components/NetworkioChart.vue"
 import DiskioChart from "@/components/DiskioChart.vue"
 import GaugeChart from "@/components/GaugeChart.vue"
 import LogsTable from "@/components/LogsTable.vue"
 import SpecsTable from '@/components/SpecsTable.vue'
-import DiskPerChart from '@/components/DiskPerChart.vue'
 import api from '@/services/api'
+import ResourceUsageChart from '@/components/ResourceUsageChart.vue'
 
 // Define the host for usage within the component
 const route = useRoute()
