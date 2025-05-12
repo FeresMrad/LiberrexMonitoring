@@ -18,7 +18,7 @@
           plugins: {
             title: {
               display: true,
-              text: 'Requests Per Second',
+              text: chartTitle,
               font: {
                 size: 18,
                 weight: 'bold'
@@ -43,7 +43,7 @@
   </template>
   
   <script setup>
-  import { shallowRef, ref, onMounted, onUnmounted, defineProps } from 'vue'
+  import { shallowRef, ref, onMounted, onUnmounted, defineProps, computed } from 'vue'
   import api from '@/services/api'
   import websocket from '@/services/websocket'
   import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip, Legend, Filler } from 'chart.js'
@@ -51,11 +51,16 @@
   
   ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip, Legend, Filler)
   
-  // Define a prop to accept host value
+  // Define props
   const props = defineProps({
     host: {
       type: String,
       required: true
+    },
+    metricType: {
+      type: String,
+      required: true,
+      validator: (value) => ['rps', 'bps'].includes(value)
     },
     ewmaAlpha: {
       type: Number,
@@ -66,6 +71,44 @@
   // Raw data storage for EWMA calculations
   const rawIntervalData = ref([]);
   const rawTimeLabels = ref([]);
+  
+  // Chart titles based on metric type
+  const chartTitle = computed(() => {
+    const titles = {
+      'rps': 'Requests Per Second',
+      'bps': 'KBytes Per Second',
+    };
+    return titles[props.metricType];
+  });
+  
+  // API method mapping
+  const getApiMethod = (metricType) => {
+    const methods = {
+      'rps': api.getApacheRpsMetrics,
+      'bps': api.getApacheBpsMetrics,
+    };
+    return methods[metricType];
+  };
+  
+  // Field to extract from response based on metric type
+  const getIntervalField = (metricType) => {
+    const fields = {
+      'rps': 'interval_req_per_sec',
+      'bps': 'interval_bytes_per_sec',
+    };
+    return fields[metricType];
+  };
+  
+  // Transformation function based on metric type
+  const transformValue = (value, metricType) => {
+    if (value === null || value === undefined) return null;
+    
+    // Convert bytes to KB for BPS metric
+    if (metricType === 'bps') {
+      return value / 1024;
+    }
+    return value;
+  };
   
   const chartData = shallowRef({
     labels: [],
@@ -98,9 +141,6 @@
   
   /**
    * Calculate Exponentially Weighted Moving Average
-   * @param {Array} data - Array of data points
-   * @param {Number} alpha - Smoothing factor between 0 and 1
-   * @returns {Array} - Array of EWMA values
    */
   const calculateEWMA = (data, alpha) => {
     if (!data.length) return [];
@@ -148,22 +188,22 @@
   }
   
   /**
-   * Fetch Apache RPS data based on the given time range.
-   * Uses the passed host prop in the query.
+   * Fetch Apache metric data based on the given time range.
    */
   const fetchData = async (timeRange = null) => {
     try {
-      const response = await api.getApacheRpsMetrics(props.host, timeRange)
+      const apiMethod = getApiMethod(props.metricType);
+      const response = await apiMethod(props.host, timeRange);
+      const fieldName = getIntervalField(props.metricType);
       
       // Store raw data for EWMA calculation
       rawTimeLabels.value = response.data.map(item => formatDate(item.time));
-      rawIntervalData.value = response.data.map(item => item.interval_req_per_sec);
+      rawIntervalData.value = response.data.map(item => 
+        transformValue(item[fieldName], props.metricType)
+      );
       
       // Calculate EWMA from the interval data
-      const ewmaData = calculateEWMA(
-        response.data.map(item => item.interval_req_per_sec), 
-        props.ewmaAlpha
-      );
+      const ewmaData = calculateEWMA(rawIntervalData.value, props.ewmaAlpha);
       
       chartData.value = {
         labels: rawTimeLabels.value,
@@ -174,7 +214,7 @@
           },
           {
             ...chartData.value.datasets[1],
-            data: response.data.map(item => item.interval_req_per_sec)
+            data: rawIntervalData.value
           }
         ]
       }
@@ -198,21 +238,24 @@
         time: timeLabel,
         rawProcessed: false,
         intervalProcessed: false,
-        reqPerSec: null,
-        intervalReqPerSec: null
+        rawValue: null,
+        intervalValue: null
       };
     }
     
+    const fieldName = getIntervalField(props.metricType);
+    const rawFieldName = fieldName.replace('interval_', '');
+    
     // Update the pending update based on measurement type
-    if (data.measurement === 'apache_raw' && data.fields.req_per_sec !== undefined) {
-      pendingUpdates.value[timeLabel].reqPerSec = data.fields.req_per_sec;
+    if (data.measurement === 'apache_raw' && data.fields[rawFieldName] !== undefined) {
+      pendingUpdates.value[timeLabel].rawValue = transformValue(data.fields[rawFieldName], props.metricType);
       pendingUpdates.value[timeLabel].rawProcessed = true;
     } 
-    else if (data.measurement === 'apache_interval' && data.fields.interval_req_per_sec !== undefined) {
-      pendingUpdates.value[timeLabel].intervalReqPerSec = data.fields.interval_req_per_sec;
+    else if (data.measurement === 'apache_interval' && data.fields[fieldName] !== undefined) {
+      pendingUpdates.value[timeLabel].intervalValue = transformValue(data.fields[fieldName], props.metricType);
       pendingUpdates.value[timeLabel].intervalProcessed = true;
       
-      // Since we got interval data, process the update (we no longer need to wait for raw data)
+      // Since we got interval data, process the update
       processUpdate(timeLabel);
     }
   };
@@ -223,7 +266,7 @@
     const pendingUpdate = pendingUpdates.value[timeLabel];
     
     // Skip if it doesn't exist or doesn't have interval data
-    if (!pendingUpdate || pendingUpdate.intervalReqPerSec === null) return;
+    if (!pendingUpdate || pendingUpdate.intervalValue === null) return;
     
     // Get current state as mutable copies
     const currentLabels = [...chartData.value.labels];
@@ -238,7 +281,7 @@
       
       // Update the raw data arrays used for EWMA
       rawTimeLabels.value.push(timeLabel);
-      rawIntervalData.value.push(pendingUpdate.intervalReqPerSec);
+      rawIntervalData.value.push(pendingUpdate.intervalValue);
       
       // Recalculate EWMA with updated data
       const ewmaData = calculateEWMA(rawIntervalData.value, props.ewmaAlpha);
@@ -251,13 +294,13 @@
       
       currentDatasets[1] = {
         ...currentDatasets[1],
-        data: [...currentDatasets[1].data, pendingUpdate.intervalReqPerSec]
+        data: [...currentDatasets[1].data, pendingUpdate.intervalValue]
       };
     } else {
       // Existing timestamp - update values at the specific index
       if (pendingUpdate.intervalProcessed) {
         // Update raw interval data for recalculation
-        rawIntervalData.value[timeIndex] = pendingUpdate.intervalReqPerSec;
+        rawIntervalData.value[timeIndex] = pendingUpdate.intervalValue;
         
         // Recalculate EWMA
         const ewmaData = calculateEWMA(rawIntervalData.value, props.ewmaAlpha);
@@ -270,7 +313,7 @@
         
         // Update live data
         const newData1 = [...currentDatasets[1].data];
-        newData1[timeIndex] = pendingUpdate.intervalReqPerSec;
+        newData1[timeIndex] = pendingUpdate.intervalValue;
         currentDatasets[1] = {
           ...currentDatasets[1],
           data: newData1

@@ -37,10 +37,10 @@
           <!-- First row of charts -->
           <div class="chart-grid">
             <div class="chart-item">
-              <ApacheRpsChart :host="host" />
+              <ApacheMetricChart :host="host" metricType="rps" />
             </div>
             <div class="chart-item">
-              <ApacheBpsChart :host="host" />
+              <ApacheMetricChart :host="host" metricType="bps" />
             </div>
             <div class="chart-item">
               <ApacheTopUrls :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
@@ -71,13 +71,12 @@
   import { useRoute } from 'vue-router'
   import { UndoOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
   import HiHello from "@/components/HiHello.vue"
-  import ApacheBpsChart from "@/components/ApacheBpsChart.vue"
-  import ApacheRpsChart from "@/components/ApacheRpsChart.vue"
   import ApacheTopUrls from "@/components/ApacheTopUrls.vue"
   import ApacheStatusChart from "@/components/ApacheStatusChart.vue"
   import ApacheTopIPs from "@/components/ApacheTopIPs.vue"
   import ApacheTable from '@/components/ApacheTable.vue'
   import api from '@/services/api'
+  import ApacheMetricChart from '@/components/ApacheMetricChart.vue'
   
   // Define the host for usage within the component
   const route = useRoute()
