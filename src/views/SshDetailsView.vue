@@ -37,8 +37,8 @@
         <!-- Top row with 3 rectangles -->
         <div class="top-row">
           <ActiveSshCount :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
-          <FailedSsh :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
-          <UniqueFailedSsh :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
+          <SshCounter :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" counterType="failed" />
+          <SshCounter :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" counterType="uniqueFailed"/>
         </div>
 
         <!-- Main content: Left (2x2 grid) and Right (Table) -->
@@ -75,13 +75,12 @@ import { useRoute } from 'vue-router'
 import { UndoOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
 import HiHello from "@/components/HiHello.vue"
 import SshTable from '@/components/SshTable.vue'
-import FailedSsh from '@/components/FailedSsh.vue'
-import UniqueFailedSsh from '@/components/UniqueFailedSsh.vue'
 import FailedSshIpTable from '@/components/FailedSshIpTable.vue'
 import ActiveSshSessions from '@/components/ActiveSshSessions.vue'
 import ActiveSshCount from '@/components/ActiveSshCount.vue'
 import api from '@/services/api'
 import SshDoughnutChart from '@/components/SshDoughnutChart.vue'
+import SshCounter from '@/components/SshCounter.vue'
 
 // Define the host for usage within the component
 const route = useRoute()
