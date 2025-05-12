@@ -43,7 +43,7 @@
               <ApacheMetricChart :host="host" metricType="bps" />
             </div>
             <div class="chart-item">
-              <ApacheRequestsChart :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" itemtype="urls" />
+              <ApacheRequestsChart :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" itemType="urls" />
             </div>
           </div>
   

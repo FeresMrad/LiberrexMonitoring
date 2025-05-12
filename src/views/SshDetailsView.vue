@@ -36,7 +36,7 @@
 
         <!-- Top row with 3 rectangles -->
         <div class="top-row">
-          <ActiveSshCount :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" />
+          <SshCounter :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" counterType="active" />
           <SshCounter :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" counterType="failed" />
           <SshCounter :host="host" :timeRange="timeRange" :refreshTrigger="refreshTrigger" counterType="uniqueFailed"/>
         </div>
@@ -77,7 +77,6 @@ import HiHello from "@/components/HiHello.vue"
 import SshTable from '@/components/SshTable.vue'
 import FailedSshIpTable from '@/components/FailedSshIpTable.vue'
 import ActiveSshSessions from '@/components/ActiveSshSessions.vue'
-import ActiveSshCount from '@/components/ActiveSshCount.vue'
 import api from '@/services/api'
 import SshDoughnutChart from '@/components/SshDoughnutChart.vue'
 import SshCounter from '@/components/SshCounter.vue'
