@@ -80,7 +80,6 @@
     WarningOutlined,
     CheckCircleOutlined
   } from '@ant-design/icons-vue';
-  import websocket from '@/services/websocket';
   import authService from '@/services/auth';
   import api from '@/services/api';
   
@@ -256,21 +255,6 @@ const generateNotificationMessage = (notification) => {
   return notification.message;
 };
   
-  // Handle WebSocket alert notification
-  const handleAlertNotification = (data) => {
-  notifications.value.unshift({
-    id: data.id,
-    title: data.rule_name,
-    message: data.message, // Keep for fallback
-    host: data.host,
-    time: data.triggered_at,
-    read: false,
-    metric_type: data.metric_type,
-    comparison: data.comparison,
-    threshold: data.threshold,
-    value: data.value
-  });
-};
   
   onMounted(() => {
     // Initial fetch if authenticated
@@ -279,13 +263,10 @@ const generateNotificationMessage = (notification) => {
       fetchHosts();
     }
     
-    // Listen for alert notifications via WebSocket
-    websocket.addEventListener('alert_notification', handleAlertNotification);
   });
   
   onUnmounted(() => {
-    // Clean up event listener
-    websocket.removeEventListener('alert_notification', handleAlertNotification);
+
   });
   </script>
   
