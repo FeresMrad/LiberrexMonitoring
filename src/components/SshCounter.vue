@@ -110,7 +110,7 @@
     font-size: 40px;
     font-weight: bold;
     margin-top: 5px;
-    margin-bottom: -50px;
+    margin-bottom: 1px;
   }
   
   .failed-counter .count {
