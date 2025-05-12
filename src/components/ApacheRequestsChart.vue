@@ -1,6 +1,6 @@
 <template>
-    <div class="top-ips-container">
-      <h3 class="chart-title">Top Source IP Addresses</h3>
+    <div class="top-items-container">
+      <h3 class="chart-title">{{ chartTitle }}</h3>
       
       <!-- Status code filter -->
       <div class="status-filter">
@@ -17,10 +17,10 @@
       <div v-if="loading" class="loading">Loading...</div>
       <div v-else-if="error" class="error">{{ error }}</div>
       <div v-else>
-        <div class="ip-bars">
-          <div v-for="(item, index) in filteredIps" :key="index" class="ip-bar-container">
-            <div class="ip-label" :title="item.ip">
-              {{ item.ip }}
+        <div class="item-bars">
+          <div v-for="(item, index) in filteredItems" :key="index" class="item-bar-container">
+            <div class="item-label" :title="item.key">
+              {{ formatItemLabel(item.key) }}
             </div>
             <div class="bar-container">
               <div class="bar" :style="{ width: `${item.percentage}%`, backgroundColor: getBarColor(item.percentage) }"></div>
@@ -29,15 +29,15 @@
           </div>
         </div>
         
-        <div v-if="filteredIps.length === 0" class="no-data">
-          No IP address data available for the selected filter
+        <div v-if="filteredItems.length === 0" class="no-data">
+          No data available for the selected filter
         </div>
       </div>
     </div>
   </template>
   
   <script setup>
-  import { ref, computed, onMounted, onUnmounted, defineProps, watch } from 'vue';
+  import { ref, computed, onMounted, defineProps, watch } from 'vue';
   import api from '@/services/api';
   
   // Component props
@@ -45,6 +45,11 @@
     host: {
       type: String,
       required: true
+    },
+    itemType: {
+      type: String,
+      required: true,
+      validator: (value) => ['ips', 'urls'].includes(value)
     },
     timeRange: {
       type: [String, Object],
@@ -56,15 +61,19 @@
     },
     limit: {
       type: Number,
-      default: 10  // Show top 10 IPs by default
+      default: 10  // Show top 10 items by default
     }
+  });
+  
+  // Chart title based on itemType
+  const chartTitle = computed(() => {
+    return props.itemType === 'ips' ? 'Top Source IP Addresses' : 'Top Responses';
   });
   
   // Reactive state
   const logs = ref([]);
   const loading = ref(true);
   const error = ref(null);
-  const refreshInterval = ref(null);
   const currentStatusFilter = ref('all');
   
   // Status filter options
@@ -81,17 +90,30 @@
     currentStatusFilter.value = filter;
   };
   
-  // Parse Apache logs to extract IP and status code
+  // Parse Apache logs to extract relevant information
   const parseLogEntry = (logMsg) => {
-    // Regex to match IP address and status code
-    const regex = /^(\S+) \S+ \S+ \[([^\]]+)\] "([^"]+)" (\d+)/;
-    const match = logMsg.match(regex);
-    
-    if (match) {
-      return {
-        ip: match[1],
-        statusCode: match[4]
-      };
+    if (props.itemType === 'ips') {
+      // For IPs: Extract IP and status code
+      const regex = /^(\S+) \S+ \S+ \[([^\]]+)\] "([^"]+)" (\d+)/;
+      const match = logMsg.match(regex);
+      
+      if (match) {
+        return {
+          ip: match[1],
+          statusCode: match[4]
+        };
+      }
+    } else {
+      // For URLs: Extract URL and status code
+      const regex = /"(GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH) ([^ ]+) HTTP\/[\d.]+" (\d+)/;
+      const match = logMsg.match(regex);
+      
+      if (match && match[2] && match[3]) {
+        return {
+          url: match[2],
+          statusCode: match[3]
+        };
+      }
     }
     
     return null;
@@ -103,50 +125,81 @@
     return `${statusCode[0]}xx`;
   };
   
-  // Process logs to count IP occurrences with status filtering
-  const ipData = computed(() => {
-    // Count occurrences of each IP with status info
-    const ipCounts = {};
+  // Process logs to count item occurrences with status filtering
+  const itemData = computed(() => {
+    // Count occurrences of each item with status info
+    const itemCounts = {};
     let totalCount = 0;
     
     logs.value.forEach(log => {
       const parsedLog = parseLogEntry(log._msg || '');
-      if (parsedLog && parsedLog.ip) {
-        const { ip, statusCode } = parsedLog;
-        const category = getStatusCategory(statusCode);
+      if (parsedLog) {
+        const item = props.itemType === 'ips' ? parsedLog.ip : parsedLog.url;
+        const category = getStatusCategory(parsedLog.statusCode);
         
         // Skip if we're filtering by status and this doesn't match
         if (currentStatusFilter.value !== 'all' && category !== currentStatusFilter.value) {
           return;
         }
         
-        if (!ipCounts[ip]) {
-          ipCounts[ip] = 0;
+        if (!itemCounts[item]) {
+          itemCounts[item] = 0;
         }
-        ipCounts[ip]++;
+        itemCounts[item]++;
         totalCount++;
       }
     });
     
-    return { ipCounts, totalCount };
+    return { itemCounts, totalCount };
   });
   
-  // Filtered and sorted IPs based on current status filter
-  const filteredIps = computed(() => {
-    const { ipCounts, totalCount } = ipData.value;
+  // Filtered and sorted items based on current status filter
+  const filteredItems = computed(() => {
+    const { itemCounts, totalCount } = itemData.value;
     
     // Convert to array and sort by count (descending)
-    const sortedIps = Object.keys(ipCounts)
-      .map(ip => ({
-        ip,
-        count: ipCounts[ip],
-        percentage: totalCount > 0 ? (ipCounts[ip] / totalCount) * 100 : 0
+    const sortedItems = Object.keys(itemCounts)
+      .map(key => ({
+        key,
+        count: itemCounts[key],
+        percentage: totalCount > 0 ? (itemCounts[key] / totalCount) * 100 : 0
       }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, props.limit); // Limit to the top N IPs
+      .slice(0, props.limit); // Limit to the top N items
     
-    return sortedIps;
+    return sortedItems;
   });
+  
+  // Format item label based on itemType
+  const formatItemLabel = (label) => {
+    if (props.itemType === 'urls') {
+      const maxLength = 40;
+      if (label.length <= maxLength) return label;
+      
+      // Extract query parameters
+      const [path, query] = label.split('?');
+      
+      // If it's just a long path, truncate the middle
+      if (!query && path.length > maxLength) {
+        const startLength = Math.floor(maxLength * 0.6);
+        const endLength = maxLength - startLength - 3; // 3 for "..."
+        return `${path.substring(0, startLength)}...${path.substring(path.length - endLength)}`;
+      }
+      
+      // If there are query parameters, show the path and indicate params exist
+      if (query) {
+        if (path.length > maxLength - 5) {
+          return `${path.substring(0, maxLength - 5)}...?…`;
+        }
+        return `${path}?…`;
+      }
+      
+      return label;
+    }
+    
+    // For IPs, return as is
+    return label;
+  };
   
   // Fetch logs from the API using the current timeRange
   const fetchLogs = async () => {
@@ -181,16 +234,10 @@
     fetchLogs();
   });
   
-  // Clean up on unmount
-  onUnmounted(() => {
-    if (refreshInterval.value) {
-      clearInterval(refreshInterval.value);
-    }
-  });
   </script>
   
   <style scoped>
-  .top-ips-container {
+  .top-items-container {
     background-color: #f9f9f9;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -208,7 +255,7 @@
     color: #008fca;
   }
   
-  .ip-bars {
+  .item-bars {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -219,14 +266,14 @@
     padding-right: 5px; /* Add padding for scrollbar */
   }
   
-  .ip-bar-container {
+  .item-bar-container {
     display: grid;
     grid-template-columns: minmax(130px, 2fr) 5fr minmax(60px, 1fr);
     align-items: center;
     gap: 10px;
   }
   
-  .ip-label {
+  .item-label {
     display: flex;
     align-items: center;
     justify-content: flex-end;
