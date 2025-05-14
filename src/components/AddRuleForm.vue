@@ -26,16 +26,18 @@
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="Metric" name="metric_type">
-              <a-select v-model:value="ruleForm.metric_type">
+              <a-select v-model:value="ruleForm.metric_type" @change="handleMetricTypeChange">
                 <a-select-option value="cpu.percent">CPU Usage (%)</a-select-option>
                 <a-select-option value="memory.percent">Memory Usage (%)</a-select-option>
                 <a-select-option value="disk.percent">Disk Usage (%)</a-select-option>
+                <a-select-option value="uptime.status">Host Uptime</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
         </a-row>
         
-        <a-row :gutter="16">
+        <!-- Only show comparison and threshold for non-uptime metrics -->
+        <a-row :gutter="16" v-if="!isUptimeRule">
           <a-col :span="12">
             <a-form-item label="Comparison" name="comparison">
               <a-select v-model:value="ruleForm.comparison">
@@ -57,7 +59,7 @@
             </a-form-item>
           </a-col>
         </a-row>
-        
+
         <!-- Modified Duration field to allow direct input -->
         <a-form-item label="Duration (minutes)" name="breach_duration">
           <a-row :gutter="16" align="middle">
@@ -79,7 +81,14 @@
               </a-button>
             </a-col>
           </a-row>
-          <div class="field-help">Time above threshold before alert is triggered (0 means immediately)</div>
+          <div class="field-help">
+            <span v-if="isUptimeRule">
+              Time host must be down before alert is triggered (0 means immediately)
+            </span>
+            <span v-else>
+              Time above threshold before alert is triggered (0 means immediately)
+            </span>
+          </div>
         </a-form-item>
         
         <a-divider>Notifications</a-divider>
@@ -268,6 +277,19 @@ const selectedHosts = ref([]);
 const targetSelection = ref('all');
 
 // Computed property for converting between duration and breach count
+
+const isUptimeRule = computed(() => {
+  return ruleForm.value.metric_type === 'uptime.status';
+});
+
+const handleMetricTypeChange = (value) => {
+  if (value === 'uptime.status') {
+    // For uptime rules, set fixed values for hidden fields
+    ruleForm.value.comparison = 'above';
+    ruleForm.value.threshold = 60; // 60 seconds
+  }
+};
+
 // Using the formula: value = typed_value + 1 (typed_value=0 means immediately)
 const breachCountFromDuration = computed(() => {
   return (ruleForm.value.breach_duration)*2 + 1;
@@ -297,8 +319,28 @@ const handleSmsChange = (checked) => {
 const ruleFormRules = {
   name: [{ required: true, message: 'Please input rule name', trigger: 'blur' }],
   metric_type: [{ required: true, message: 'Please select a metric', trigger: 'change' }],
-  comparison: [{ required: true, message: 'Please select a comparison', trigger: 'change' }],
-  threshold: [{ required: true, message: 'Please input a threshold', trigger: 'change' }]
+  comparison: [{ 
+    required: false,
+    validator: (rule, value) => {
+      // Only require comparison for non-uptime rules
+      if (!isUptimeRule.value && !value) {
+        return Promise.reject('Please select a comparison');
+      }
+      return Promise.resolve();
+    },
+    trigger: 'change' 
+  }],
+  threshold: [{ 
+    required: false,
+    validator: (rule, value) => {
+      // Only require threshold for non-uptime rules
+      if (!isUptimeRule.value && (value === null || value === undefined)) {
+        return Promise.reject('Please input a threshold');
+      }
+      return Promise.resolve();
+    },
+    trigger: 'change' 
+  }]
 };
 
 // Watch for changes in the rule prop
@@ -501,6 +543,10 @@ const handleModalOk = async () => {
       message.success('Alert rule created successfully');
     }
     
+    if (isUptimeRule.value) {
+      ruleData.comparison = 'above';
+      ruleData.threshold = 60; // 60 seconds
+    }
     // Emit saved event
     emit('saved', result);
     
